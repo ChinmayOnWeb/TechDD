@@ -88,7 +88,7 @@ Python 3.12 · GitPython + GitHub REST API · radon/lizard (complexity) · syft 
 - Published N acquisition-grade technical DD reports on commercial OSS companies; methodology open-sourced (N GitHub stars).
 - Quantified technical debt into valuation adjustments of X–Y% of enterprise value via engineer-month remediation modelling.
 - Bus-factor model flagged N at-risk modules; backtested against actual contributor departures with Z% precision.
-- Built comps + DCF valuation models for 6 targets; validated methodology against GitLab's public financials.
+- Built comps + DCF valuation models for N targets (3–5 report subjects plus GitLab); validated methodology against GitLab's public financials.
 
 ## Assumptions
 
