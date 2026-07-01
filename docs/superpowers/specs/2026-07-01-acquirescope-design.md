@@ -1,9 +1,8 @@
 # AcquireScope — Design Spec
 
 **Date:** 2026-07-01
-**Status:** Draft — pending user review
+**Status:** Approved 2026-07-01
 **Author:** brainstormed with Claude Code (superpowers:brainstorming)
-**Supersedes:** `2026-07-01-earningsdesk-design.md` (shelved — user goal changed from AI-engineering roles to Tech M&A; EarningsDesk spec retained as an alternative)
 
 ## Summary
 
@@ -105,4 +104,4 @@ Python 3.12 · GitPython + GitHub REST API · radon/lizard (complexity) · syft 
 
 ## Relationship to EarningsDesk
 
-EarningsDesk (`2026-07-01-earningsdesk-design.md`) is shelved, not deleted: it remains the better project if the goal reverts to pure AI-engineering roles. If time permits after AcquireScope's scope floor, the LLM narrative layer preserves enough AI surface to credibly hedge both markets. Recommendation remains: one exceptional artifact beats two good ones.
+EarningsDesk (an earlier multimodal earnings-intelligence concept aimed at AI-engineering roles) was considered and dropped per user decision on 2026-07-01. Its verify-against-ground-truth pattern survives here in the LLM narrative layer, which preserves enough AI surface to credibly hedge both markets if time permits after the scope floor.
