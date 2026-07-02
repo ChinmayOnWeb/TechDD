@@ -42,6 +42,21 @@ def _looks_like_test_path(path: str | None) -> bool:
     return ".test." in filename or ".spec." in filename
 
 
+_MAX_PRIVATE_KEY_PROSE_CHARS = 20
+
+
+def _is_private_key_prose_mention(line: str, match: re.Match) -> bool:
+    """A genuine embedded PEM header carries little else on its line besides
+    itself (maybe a quote/backtick/leading diff '+'). A header appearing
+    mid-sentence in an error message or comment describing the expected
+    format ("...must contain a PEM private key (-----BEGIN PRIVATE
+    KEY-----).") is not real key material."""
+    stripped = line.lstrip("+").strip()
+    extra = stripped.replace(match.group(0), "", 1)
+    extra_chars = len(re.sub(r"[\s'\"`,;)(.]", "", extra))
+    return extra_chars > _MAX_PRIVATE_KEY_PROSE_CHARS
+
+
 def _is_manifest(path: str) -> bool:
     name = path.rsplit("/", 1)[-1]
     if name.startswith("requirements") and name.endswith(".txt"):
@@ -50,11 +65,11 @@ def _is_manifest(path: str) -> bool:
 
 
 def _secrets_in_history(ingest: RepoIngest) -> tuple[list[Finding], int, int]:
-    """Returns (findings, high_confidence_count, test_fixture_count)."""
+    """Returns (findings, high_confidence_count, low_confidence_count)."""
     findings: list[Finding] = []
     seen: set[str] = set()
     high_confidence = 0
-    test_fixture = 0
+    low_confidence = 0
     for record in ingest.full_patch_text().split("\x1e"):
         if not record.startswith("COMMIT "):
             continue
@@ -73,8 +88,22 @@ def _secrets_in_history(ingest: RepoIngest) -> tuple[list[Finding], int, int]:
                     if secret in seen:
                         continue
                     seen.add(secret)
-                    if _looks_like_test_path(current_path):
-                        test_fixture += 1
+                    prose_mention = (
+                        label == "Private key block"
+                        and _is_private_key_prose_mention(line, match)
+                    )
+                    if prose_mention:
+                        low_confidence += 1
+                        title = f"Private key format mentioned in text (likely not a real key): {label}"
+                        summary = (
+                            "A private-key marker string appeared surrounded by other text on the "
+                            "same line, consistent with an error message or comment describing the "
+                            "expected format rather than an embedded key. Not excluded automatically "
+                            "-- verify manually before dismissing."
+                        )
+                        severity = Severity.LOW
+                    elif _looks_like_test_path(current_path):
+                        low_confidence += 1
                         title = f"Possible test-fixture secret in git history: {label}"
                         severity = Severity.LOW
                         summary = (
@@ -99,7 +128,7 @@ def _secrets_in_history(ingest: RepoIngest) -> tuple[list[Finding], int, int]:
                             path=current_path, detail=label,
                         )],
                     ))
-    return findings, high_confidence, test_fixture
+    return findings, high_confidence, low_confidence
 
 
 def _vulnerability_findings(ingest: RepoIngest) -> tuple[list[Finding], int]:
@@ -149,7 +178,7 @@ def analyze(ingest: RepoIngest) -> ModuleResult:
     fileset = set(files)
     findings: list[Finding] = []
 
-    secret_findings, secret_count, test_fixture_secret_count = _secrets_in_history(ingest)
+    secret_findings, secret_count, low_confidence_secret_count = _secrets_in_history(ingest)
     findings.extend(secret_findings)
 
     has_policy = any(f.upper() == "SECURITY.MD" for f in files)
@@ -192,7 +221,7 @@ def analyze(ingest: RepoIngest) -> ModuleResult:
         module=MODULE, status="ok", findings=findings,
         metrics={
             "secret_count": secret_count,
-            "test_fixture_secret_count": test_fixture_secret_count,
+            "low_confidence_secret_count": low_confidence_secret_count,
             "has_security_policy": has_policy,
             "manifest_age_days": manifest_age_days,
             "vulnerability_count": vulnerability_count,
