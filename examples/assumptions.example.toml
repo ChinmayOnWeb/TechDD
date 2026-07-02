@@ -1,0 +1,35 @@
+# AcquireScope analyst assumptions — every number needs a stated source.
+# This example is calibrated for demonstration against the test fixture repo.
+
+[target]
+name = "target-repo"
+
+[revenue]                # annual revenue estimate, USD — analyst-researched
+low = 8_000_000
+mid = 12_000_000
+high = 18_000_000
+source = "stated ARR press release 2026-03; pricing-page x headcount cross-check"
+
+[comps]                  # public OSS/devtools comparables
+companies = [
+    { name = "Confluent", ev_revenue_multiple = 5.0 },
+    { name = "HashiCorp", ev_revenue_multiple = 6.2 },
+    { name = "GitLab", ev_revenue_multiple = 8.5 },
+]
+source = "public filings as of 2026-06"
+
+[dcf]
+years = 5
+growth_bear = 0.10
+growth_base = 0.25
+growth_bull = 0.40
+operating_margin = 0.15  # steady-state
+discount_rate = 0.18     # private-company WACC proxy
+terminal_growth = 0.03
+
+[costs]
+engineer_month_usd = 20_000       # loaded cost, prices remediation capex
+retention_package_usd = 300_000   # per flagged key person
+integration_cost_usd = 500_000    # flat integration estimate
+license_discount_per_finding = 0.02   # fraction of pre-DD EV per copyleft finding
+license_discount_cap = 0.10           # total license discount ceiling

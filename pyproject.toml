@@ -6,6 +6,7 @@ requires-python = ">=3.12"
 dependencies = [
     "typer>=0.12",
     "lizard>=1.17",
+    "openpyxl>=3.1",
 ]
 
 [project.optional-dependencies]
