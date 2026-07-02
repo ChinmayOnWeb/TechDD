@@ -35,7 +35,7 @@ def test_planted_secret_found_in_history(fixture_repo, monkeypatch):
     assert "AWS access key" in secrets[0].title
     assert secrets[0].evidence[0].path == "config/settings.py"
     assert result.metrics["secret_count"] == 1
-    assert result.metrics["test_fixture_secret_count"] == 0
+    assert result.metrics["low_confidence_secret_count"] == 0
 
 
 def test_secret_in_test_path_downgraded_to_low_confidence(tmp_path, monkeypatch):
@@ -54,7 +54,26 @@ def test_secret_in_test_path_downgraded_to_low_confidence(tmp_path, monkeypatch)
     assert len(matches) == 1
     assert matches[0].severity == Severity.LOW
     assert result.metrics["secret_count"] == 0
-    assert result.metrics["test_fixture_secret_count"] == 1
+    assert result.metrics["low_confidence_secret_count"] == 1
+
+
+def test_private_key_mention_in_prose_downgraded(tmp_path, monkeypatch):
+    """A PEM header string can appear inside error-message/documentation text
+    (e.g. "must contain a PEM private key (-----BEGIN PRIVATE KEY-----)."),
+    which is not an embedded key. Genuine key material has little else on
+    its line; this must not surface as a CRITICAL leak."""
+    _no_osv(monkeypatch)
+    repo = _tiny_repo(
+        tmp_path, "src/validate.ts",
+        "throw new Error('The field must contain a PEM private key "
+        "(-----BEGIN PRIVATE KEY-----).');\n",
+    )
+    result = security.analyze(RepoIngest(repo))
+    matches = [f for f in result.findings if "Private key" in f.title]
+    assert len(matches) == 1
+    assert matches[0].severity == Severity.LOW
+    assert result.metrics["secret_count"] == 0
+    assert result.metrics["low_confidence_secret_count"] == 1
 
 
 def test_secret_removed_from_head_still_flagged(fixture_repo, monkeypatch):
