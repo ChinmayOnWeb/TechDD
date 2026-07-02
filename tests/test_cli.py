@@ -29,3 +29,22 @@ def test_module_crash_degrades_gracefully(fixture_repo, tmp_path, monkeypatch):
     assert "boom" in md
     # other modules still ran
     assert "Module: bus_factor" in md
+
+
+def test_all_planted_issues_detected_end_to_end(fixture_repo, tmp_path):
+    """Spec regression gate: every planted issue in the synthetic repo is found."""
+    out = tmp_path / "e2e-report.md"
+    result = runner.invoke(cli.app, [str(fixture_repo), "--output", str(out)])
+    assert result.exit_code == 0
+    md = out.read_text(encoding="utf-8")
+
+    # Planted issue 1: payments/ single-owner module
+    assert "Single point of failure: payments/" in md
+    # Planted issue 2: GPL dependency in requirements.txt
+    assert "Copyleft dependency: mysqlclient" in md
+    # Planted issue 3: churn+complexity hotspot
+    assert "Tech-debt hotspot: core/engine.py" in md
+    # Planted issue 4: departed key contributor
+    assert "Departed key contributor: dave@example.com" in md
+    # Confidence band present in metrics line
+    assert "remediation_months_low" in md
