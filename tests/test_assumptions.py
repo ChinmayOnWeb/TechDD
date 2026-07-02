@@ -27,6 +27,7 @@ def test_loads_example_file():
     assert a.dcf_years == 5
     assert a.discount_rate == 0.18
     assert a.engineer_month_usd == 20_000
+    assert a.security_fix_cost_usd == 50_000
     assert "press release" in a.revenue_source
 
 

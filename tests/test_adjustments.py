@@ -15,6 +15,7 @@ def _assumptions() -> Assumptions:
         operating_margin=0.20, discount_rate=0.25, terminal_growth=0.05,
         engineer_month_usd=20_000, retention_package_usd=300_000,
         integration_cost_usd=500_000,
+        security_fix_cost_usd=50_000,
         license_discount_per_finding=0.02, license_discount_cap=0.10,
     )
 
@@ -40,6 +41,12 @@ def _results() -> list[ModuleResult]:
             module="hotspots", status="ok",
             metrics={"remediation_months_low": 1.0, "remediation_months_mid": 2.0,
                      "remediation_months_high": 3.0, "hotspot_count": 1},
+        ),
+        ModuleResult(
+            module="security", status="ok",
+            findings=[Finding("security", "Secret in git history: AWS access key",
+                              Severity.CRITICAL, "s")],
+            metrics={"secret_count": 1},
         ),
     ]
 
@@ -84,7 +91,18 @@ def test_failed_module_prices_as_not_assessed():
     assert "Not assessed" in remediation.basis
 
 
-def test_security_always_not_assessed_in_phase2():
+def test_security_priced_from_critical_and_high_findings():
     security = price_adjustments(_results(), _assumptions(), 10_000_000)[4]
+    assert security.assessed
+    assert security.mid == 50_000          # 1 CRITICAL finding x 50k
+    assert security.low == 25_000
+    assert security.high == 75_000
+    assert "AWS access key" in "; ".join(security.evidence)
+
+
+def test_security_not_assessed_when_module_missing():
+    results = [r for r in _results() if r.module != "security"]
+    security = price_adjustments(results, _assumptions(), 10_000_000)[4]
     assert not security.assessed
     assert security.mid == 0
+    assert "Not assessed" in security.basis
