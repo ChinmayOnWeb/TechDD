@@ -30,6 +30,7 @@ class Assumptions:
     engineer_month_usd: float
     retention_package_usd: float
     integration_cost_usd: float
+    security_fix_cost_usd: float
     license_discount_per_finding: float
     license_discount_cap: float
 
@@ -111,6 +112,7 @@ def load_assumptions(path: Path) -> Assumptions:
         engineer_month_usd=_positive(costs, "costs", "engineer_month_usd"),
         retention_package_usd=_positive(costs, "costs", "retention_package_usd"),
         integration_cost_usd=_positive(costs, "costs", "integration_cost_usd"),
+        security_fix_cost_usd=_positive(costs, "costs", "security_fix_cost_usd"),
         license_discount_per_finding=_rate(costs, "costs", "license_discount_per_finding"),
         license_discount_cap=_rate(costs, "costs", "license_discount_cap"),
     )

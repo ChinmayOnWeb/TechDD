@@ -85,7 +85,18 @@ def price_adjustments(
         "flat integration estimate from assumptions, +/-50%", [],
     ))
 
-    # 5. Security remediation — module ships in Phase 3.
-    adjustments.append(_not_assessed("Security remediation", "security module ships in Phase 3"))
+    # 5. Security remediation — priced from CRITICAL/HIGH security findings.
+    sec = by_module.get("security")
+    if sec is None:
+        adjustments.append(_not_assessed("Security remediation", "security module failed or missing"))
+    else:
+        serious = [f for f in sec.findings if f.severity in (Severity.CRITICAL, Severity.HIGH)]
+        low, mid, high = _banded(len(serious) * assumptions.security_fix_cost_usd)
+        adjustments.append(Adjustment(
+            "Security remediation", low, mid, high,
+            f"{len(serious)} critical/high security finding(s) x "
+            f"${assumptions.security_fix_cost_usd:,.0f} remediation cost, +/-50%",
+            [f.title for f in serious],
+        ))
 
     return adjustments

@@ -31,5 +31,6 @@ terminal_growth = 0.03
 engineer_month_usd = 20_000       # loaded cost, prices remediation capex
 retention_package_usd = 300_000   # per flagged key person
 integration_cost_usd = 500_000    # flat integration estimate
+security_fix_cost_usd = 50_000    # per critical/high security finding
 license_discount_per_finding = 0.02   # fraction of pre-DD EV per copyleft finding
 license_discount_cap = 0.10           # total license discount ceiling

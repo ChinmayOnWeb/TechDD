@@ -26,6 +26,7 @@ def _assumptions() -> Assumptions:
         operating_margin=0.20, discount_rate=0.25, terminal_growth=0.05,
         engineer_month_usd=20_000, retention_package_usd=300_000,
         integration_cost_usd=500_000,
+        security_fix_cost_usd=50_000,
         license_discount_per_finding=0.02, license_discount_cap=0.10,
     )
 

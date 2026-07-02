@@ -71,6 +71,7 @@ def fixture_repo(tmp_path_factory) -> Path:
 
     # 1 commit: requirements.txt with planted GPL dep, by bob (recent)
     _commit(repo, "requirements.txt", "flask==3.0.0\nmysqlclient==2.2.0\n", bob, "2026-05-02T10:00:00")
+    _git(repo, "tag", "v0.1.0")
 
     # 6 commits: payments/billing.py by alice ONLY (planted bus-factor-1)
     for i in range(6):
@@ -85,6 +86,7 @@ def fixture_repo(tmp_path_factory) -> Path:
     for i, author in enumerate(engine_authors):
         body = "".join(ENGINE_TEMPLATE.format(n=k) for k in range(i + 1))
         _commit(repo, "core/engine.py", body, author, f"2026-05-{10 + i:02d}T10:00:00")
+    _git(repo, "tag", "v0.2.0")
 
     # 5 commits: core/legacy.py by dave, OLD dates (planted departed contributor)
     for i in range(5):
@@ -93,5 +95,18 @@ def fixture_repo(tmp_path_factory) -> Path:
             f"LEGACY = {i}\n",
             dave, f"2024-03-{10 + i:02d}T10:00:00",
         )
+
+    # 2 commits: planted secret added then removed by bob (recent dates).
+    # The key is gone at HEAD but remains recoverable from history.
+    _commit(
+        repo, "config/settings.py",
+        'DEBUG = False\nAWS_KEY = "AKIAIOSFODNN7EXAMPLE"\n',
+        bob, "2026-05-18T10:00:00",
+    )
+    _commit(
+        repo, "config/settings.py",
+        "DEBUG = False\n",
+        bob, "2026-05-19T10:00:00",
+    )
 
     return repo

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Callable
 
@@ -17,7 +18,8 @@ from acquirescope.bridge.valuation import (
 from acquirescope.excel import write_model
 from acquirescope.ingest import RepoIngest
 from acquirescope.models import ModuleResult
-from acquirescope.modules import bus_factor, hotspots, licenses
+from acquirescope.modules import bus_factor, delivery, hotspots, licenses, security
+from acquirescope.narrative import generate_narrative
 from acquirescope.report import render_markdown
 
 app = typer.Typer(add_completion=False)
@@ -26,6 +28,8 @@ MODULES: list[tuple[str, Callable[[RepoIngest], ModuleResult]]] = [
     ("bus_factor", bus_factor.analyze),
     ("licenses", licenses.analyze),
     ("hotspots", hotspots.analyze),
+    ("security", security.analyze),
+    ("delivery", delivery.analyze),
 ]
 
 
@@ -39,14 +43,48 @@ def run_modules(ingest: RepoIngest) -> list[ModuleResult]:
     return results
 
 
+def _narrative_unavailable_reason() -> str | None:
+    try:
+        import anthropic  # noqa: F401
+    except ImportError:
+        return "--narrative requires the anthropic package: pip install acquirescope[llm]"
+    if not (os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_AUTH_TOKEN")):
+        return "--narrative requires ANTHROPIC_API_KEY (or ANTHROPIC_AUTH_TOKEN) in the environment"
+    return None
+
+
+def _anthropic_complete(prompt: str) -> str:
+    import anthropic
+
+    client = anthropic.Anthropic()
+    response = client.messages.create(
+        model="claude-opus-4-8",
+        max_tokens=2048,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    return "".join(block.text for block in response.content if block.type == "text")
+
+
 @app.command()
 def analyze(
     repo_path: Path = typer.Argument(..., exists=True, file_okay=False, help="Path to a local git repository"),
     output: Path = typer.Option(Path("dd-report.md"), "--output", "-o", help="Report output path"),
+    narrative: bool = typer.Option(False, "--narrative", help="Prepend an LLM-generated, citation-verified executive narrative (requires acquirescope[llm] and an Anthropic API key)"),
 ) -> None:
     """Run all due-diligence modules against REPO_PATH and write a markdown report."""
+    if narrative:
+        reason = _narrative_unavailable_reason()
+        if reason:
+            typer.echo(reason, err=True)
+            raise typer.Exit(code=1)
     results = run_modules(RepoIngest(repo_path))
-    output.write_text(render_markdown(repo_path.name, results), encoding="utf-8")
+    narrative_text: str | None = None
+    if narrative:
+        try:
+            narrative_text = generate_narrative(repo_path.name, results, _anthropic_complete)
+        except Exception as exc:  # report must never be lost to a narrative failure
+            typer.echo(f"Warning: narrative generation failed ({exc}); writing report without it.", err=True)
+    output.write_text(render_markdown(repo_path.name, results, narrative_text), encoding="utf-8")
     typer.echo(f"Report written to {output}")
 
 
