@@ -34,3 +34,10 @@ def test_failed_module_marked_not_assessed():
 def test_report_ends_with_disclaimer():
     md = render_markdown("target-repo", _sample_results())
     assert "educational analysis" in md.lower()
+
+
+def test_narrative_section_rendered_when_provided():
+    md = render_markdown("target-repo", _sample_results(), narrative="Summary claim [E1].")
+    assert "## Executive narrative (LLM-generated, citation-verified)" in md
+    assert "Summary claim [E1]." in md
+    assert md.index("Executive narrative") < md.index("## Module:")

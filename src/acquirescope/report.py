@@ -10,8 +10,15 @@ DISCLAIMER = (
 )
 
 
-def render_markdown(repo_name: str, results: list[ModuleResult]) -> str:
+def render_markdown(
+    repo_name: str, results: list[ModuleResult], narrative: str | None = None
+) -> str:
     lines = [f"# Technical Due Diligence Report: {repo_name}", ""]
+    if narrative:
+        lines.append("## Executive narrative (LLM-generated, citation-verified)")
+        lines.append("")
+        lines.append(narrative)
+        lines.append("")
 
     for result in results:
         lines.append(f"## Module: {result.module}")

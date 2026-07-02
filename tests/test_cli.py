@@ -100,3 +100,40 @@ def test_planted_issues_priced_in_model_end_to_end(fixture_repo, tmp_path):
     total_mid = sum(adj.cell(row=r, column=3).value for r in range(2, 7))
     assert total_mid > 0
     assert pre_mid - total_mid < pre_mid              # post-DD EV strictly below pre-DD
+
+
+def test_narrative_unavailable_exits_1(fixture_repo, tmp_path, monkeypatch):
+    monkeypatch.setattr(cli, "_narrative_unavailable_reason", lambda: "no key")
+    out = tmp_path / "r.md"
+    result = runner.invoke(cli.app, ["analyze", str(fixture_repo), "--output", str(out), "--narrative"])
+    assert result.exit_code == 1
+    assert not out.exists()
+
+
+def test_narrative_section_written_with_fake_completer(fixture_repo, tmp_path, monkeypatch):
+    monkeypatch.setattr(cli, "_narrative_unavailable_reason", lambda: None)
+    monkeypatch.setattr(cli, "_anthropic_complete",
+                        lambda prompt: "Key-person risk dominates [E1]. Fake [E99].")
+    out = tmp_path / "r.md"
+    result = runner.invoke(cli.app, ["analyze", str(fixture_repo), "--output", str(out), "--narrative"])
+    assert result.exit_code == 0
+    md = out.read_text(encoding="utf-8")
+    assert "## Executive narrative" in md
+    assert "[E1]" in md
+    assert "[E99]" not in md
+    assert "1 unverifiable citation(s) removed" in md
+
+
+def test_narrative_api_failure_degrades_to_plain_report(fixture_repo, tmp_path, monkeypatch):
+    monkeypatch.setattr(cli, "_narrative_unavailable_reason", lambda: None)
+
+    def boom(prompt):
+        raise RuntimeError("api down")
+
+    monkeypatch.setattr(cli, "_anthropic_complete", boom)
+    out = tmp_path / "r.md"
+    result = runner.invoke(cli.app, ["analyze", str(fixture_repo), "--output", str(out), "--narrative"])
+    assert result.exit_code == 0
+    md = out.read_text(encoding="utf-8")
+    assert "Executive narrative" not in md
+    assert "# Technical Due Diligence Report:" in md
