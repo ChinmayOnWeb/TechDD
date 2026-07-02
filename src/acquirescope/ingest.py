@@ -35,7 +35,7 @@ class RepoIngest:
     def _git(self, *args: str) -> str:
         result = subprocess.run(
             ["git", "-C", str(self.repo_path), *args],
-            check=True, capture_output=True, text=True, encoding="utf-8",
+            check=True, capture_output=True, text=True, encoding="utf-8", errors="replace",
         )
         return result.stdout
 
