@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from acquirescope.models import ModuleResult
 
-_DISCLAIMER = (
+DISCLAIMER = (
     "*This report is an automated, educational analysis of publicly available "
     "data as of the run date. It is not investment advice, not a statement about "
     "any company's value or conduct, and findings are observations that may be "
@@ -40,6 +40,6 @@ def render_markdown(repo_name: str, results: list[ModuleResult]) -> str:
 
     lines.append("---")
     lines.append("")
-    lines.append(_DISCLAIMER)
+    lines.append(DISCLAIMER)
     lines.append("")
     return "\n".join(lines)
