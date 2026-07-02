@@ -31,8 +31,9 @@ def test_module_crash_degrades_gracefully(fixture_repo, tmp_path, monkeypatch):
     assert "Module: bus_factor" in md
 
 
-def test_all_planted_issues_detected_end_to_end(fixture_repo, tmp_path):
+def test_all_planted_issues_detected_end_to_end(fixture_repo, tmp_path, monkeypatch):
     """Spec regression gate: every planted issue in the synthetic repo is found."""
+    monkeypatch.setattr("acquirescope.modules.security.shutil.which", lambda _: None)
     out = tmp_path / "e2e-report.md"
     result = runner.invoke(cli.app, ["analyze", str(fixture_repo), "--output", str(out)])
     assert result.exit_code == 0
@@ -48,6 +49,13 @@ def test_all_planted_issues_detected_end_to_end(fixture_repo, tmp_path):
     assert "Departed key contributor: dave@example.com" in md
     # Confidence band present in metrics line
     assert "remediation_months_low" in md
+    # Phase 3 planted issue: committed-then-removed AWS key
+    assert "Secret in git history: AWS access key" in md
+    # New modules render, honest about proxies and scope
+    assert "## Module: security" in md
+    assert "## Module: delivery" in md
+    assert "Vulnerability scan not available" in md
+    assert "No CI configuration detected" in md
 
 
 def test_model_writes_workbook(fixture_repo, tmp_path):
@@ -74,10 +82,11 @@ def test_model_invalid_assumptions_exits_1(fixture_repo, tmp_path):
     assert not out.exists()
 
 
-def test_planted_issues_priced_in_model_end_to_end(fixture_repo, tmp_path):
+def test_planted_issues_priced_in_model_end_to_end(fixture_repo, tmp_path, monkeypatch):
     """Phase 2 regression gate: planted DD issues become priced line items."""
     from openpyxl import load_workbook
 
+    monkeypatch.setattr("acquirescope.modules.security.shutil.which", lambda _: None)
     example = Path(__file__).parent.parent / "examples" / "assumptions.example.toml"
     out = tmp_path / "e2e-model.xlsx"
     result = runner.invoke(cli.app, [
@@ -92,7 +101,9 @@ def test_planted_issues_priced_in_model_end_to_end(fixture_repo, tmp_path):
     assert adj["C3"].value == 600_000                 # exactly 2 key-person findings x 300k
     assert adj["C4"].value > 0                        # license discount priced
     assert "mysqlclient" in adj["G4"].value           # evidence reaches the workbook
-    assert adj["E6"].value == "NOT ASSESSED"          # security honest about scope
+    assert adj["E6"].value == "yes"                   # security now assessed
+    assert adj["C6"].value == 50_000                  # 1 CRITICAL secret x 50k
+    assert "AWS access key" in adj["G6"].value        # evidence reaches the workbook
 
     summary = wb["Valuation Summary"]
     # Formulas are not evaluated by openpyxl; recompute from stored values.
