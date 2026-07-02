@@ -6,7 +6,7 @@ from acquirescope.ingest import RepoIngest
 def test_commits_parsed_with_authors_and_changes(fixture_repo):
     ingest = RepoIngest(Path(fixture_repo))
     commits = ingest.commits()
-    assert len(commits) == 22
+    assert len(commits) == 24
     newest = commits[0]
     assert newest.sha and newest.author_email.endswith("@example.com")
     dave_commits = [c for c in commits if c.author_email == "dave@example.com"]
