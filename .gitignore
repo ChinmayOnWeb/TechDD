@@ -3,6 +3,7 @@
 .claude/scheduled_tasks.lock
 
 # Python
+*.egg-info/
 __pycache__/
 *.pyc
 .venv/
