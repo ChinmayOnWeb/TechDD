@@ -1,3 +1,4 @@
+import subprocess
 from pathlib import Path
 
 from acquirescope.ingest import RepoIngest
@@ -42,3 +43,22 @@ def test_full_patch_text_contains_planted_secret(fixture_repo):
     assert "AKIAIOSFODNN7EXAMPLE" in text
     assert "\x1eCOMMIT " in text
     assert ingest.full_patch_text() is text  # cached
+
+
+def test_git_output_survives_invalid_utf8_bytes(tmp_path):
+    """Real repos can contain non-UTF-8 bytes in a diff (binary blobs git
+    misdetects as text, legacy-encoded fixtures, etc). A strict utf-8 decode
+    of git's output must not crash — replace, don't raise."""
+    repo = tmp_path / "badenc"
+    subprocess.run(["git", "init", str(repo)], check=True, capture_output=True)
+    (repo / "bad.txt").write_bytes(b"marker_before\n\xbf\xbf\xbf\nmarker_after\n")
+    subprocess.run(["git", "-C", str(repo), "add", "bad.txt"], check=True, capture_output=True)
+    subprocess.run(
+        ["git", "-C", str(repo), "-c", "user.name=t", "-c", "user.email=t@example.com",
+         "commit", "-m", "add file with invalid utf-8 bytes"],
+        check=True, capture_output=True,
+    )
+    ingest = RepoIngest(repo)
+    text = ingest.full_patch_text()  # must not raise
+    assert "marker_before" in text
+    assert "marker_after" in text
