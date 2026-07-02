@@ -72,3 +72,31 @@ def test_model_invalid_assumptions_exits_1(fixture_repo, tmp_path):
     ])
     assert result.exit_code == 1
     assert not out.exists()
+
+
+def test_planted_issues_priced_in_model_end_to_end(fixture_repo, tmp_path):
+    """Phase 2 regression gate: planted DD issues become priced line items."""
+    from openpyxl import load_workbook
+
+    example = Path(__file__).parent.parent / "examples" / "assumptions.example.toml"
+    out = tmp_path / "e2e-model.xlsx"
+    result = runner.invoke(cli.app, [
+        "model", str(fixture_repo), "--assumptions", str(example), "--output", str(out),
+    ])
+    assert result.exit_code == 0
+    wb = load_workbook(out)
+
+    adj = wb["DD Adjustments"]
+    # Row order fixed: 2 remediation, 3 retention, 4 license, 5 integration, 6 security
+    assert adj["B2"].value > 0                        # remediation capex priced from hotspot
+    assert adj["C3"].value == 600_000                 # exactly 2 key-person findings x 300k
+    assert adj["C4"].value > 0                        # license discount priced
+    assert "mysqlclient" in adj["G4"].value           # evidence reaches the workbook
+    assert adj["E6"].value == "NOT ASSESSED"          # security honest about scope
+
+    summary = wb["Valuation Summary"]
+    # Formulas are not evaluated by openpyxl; recompute from stored values.
+    pre_mid = (summary["C4"].value + summary["C5"].value) / 2
+    total_mid = sum(adj.cell(row=r, column=3).value for r in range(2, 7))
+    assert total_mid > 0
+    assert pre_mid - total_mid < pre_mid              # post-DD EV strictly below pre-DD
