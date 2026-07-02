@@ -11,6 +11,21 @@ def _no_osv(monkeypatch):
     monkeypatch.setattr(security.shutil, "which", lambda _: None)
 
 
+def _tiny_repo(tmp_path: Path, path: str, content: str) -> Path:
+    repo = tmp_path / "target"
+    subprocess.run(["git", "init", str(repo)], check=True, capture_output=True)
+    file_path = repo / path
+    file_path.parent.mkdir(parents=True, exist_ok=True)
+    file_path.write_text(content, encoding="utf-8")
+    subprocess.run(["git", "-C", str(repo), "add", path], check=True, capture_output=True)
+    subprocess.run(
+        ["git", "-C", str(repo), "-c", "user.name=t", "-c", "user.email=t@example.com",
+         "commit", "-m", "add file"],
+        check=True, capture_output=True,
+    )
+    return repo
+
+
 def test_planted_secret_found_in_history(fixture_repo, monkeypatch):
     _no_osv(monkeypatch)
     result = security.analyze(RepoIngest(Path(fixture_repo)))
@@ -20,6 +35,26 @@ def test_planted_secret_found_in_history(fixture_repo, monkeypatch):
     assert "AWS access key" in secrets[0].title
     assert secrets[0].evidence[0].path == "config/settings.py"
     assert result.metrics["secret_count"] == 1
+    assert result.metrics["test_fixture_secret_count"] == 0
+
+
+def test_secret_in_test_path_downgraded_to_low_confidence(tmp_path, monkeypatch):
+    """Test suites for credential-handling code routinely commit synthetic
+    secrets on purpose (e.g. AWS's own well-known example key). A secret
+    found under a test/fixture path is real signal but not an actionable
+    'must rotate' finding, so it must not inflate secret_count or CRITICAL
+    severity the way a genuine leak does."""
+    _no_osv(monkeypatch)
+    repo = _tiny_repo(
+        tmp_path, "src/__tests__/fixtures/leaked.txt",
+        'AWS_KEY = "AKIAIOSFODNN7EXAMPLE"\n',
+    )
+    result = security.analyze(RepoIngest(repo))
+    matches = [f for f in result.findings if "AWS access key" in f.title]
+    assert len(matches) == 1
+    assert matches[0].severity == Severity.LOW
+    assert result.metrics["secret_count"] == 0
+    assert result.metrics["test_fixture_secret_count"] == 1
 
 
 def test_secret_removed_from_head_still_flagged(fixture_repo, monkeypatch):

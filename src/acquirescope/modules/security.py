@@ -20,6 +20,27 @@ _SECRET_PATTERNS = [
      re.compile(r"(?i)\b(?:api_key|secret_key|token)\s*=\s*['\"][A-Za-z0-9/+_\-]{16,}['\"]")),
 ]
 
+# Test suites for credential-handling code routinely commit synthetic secrets
+# on purpose (AWS's own docs even publish a well-known example access key).
+# A hit under one of these path segments is real signal but not an
+# actionable "must rotate" finding -- downgrade confidence instead of
+# discarding it outright.
+_LOW_CONFIDENCE_PATH_MARKERS = frozenset({
+    "test", "tests", "testing", "__tests__", "spec", "specs",
+    "fixture", "fixtures", "evaluation", "evaluations",
+    "mock", "mocks", "example", "examples", "sample", "samples",
+})
+
+
+def _looks_like_test_path(path: str | None) -> bool:
+    if not path:
+        return False
+    segments = re.split(r"[/\\]", path.lower())
+    if any(seg in _LOW_CONFIDENCE_PATH_MARKERS for seg in segments):
+        return True
+    filename = segments[-1]
+    return ".test." in filename or ".spec." in filename
+
 
 def _is_manifest(path: str) -> bool:
     name = path.rsplit("/", 1)[-1]
@@ -28,9 +49,12 @@ def _is_manifest(path: str) -> bool:
     return name in ("pyproject.toml", "package.json", "go.mod", "Cargo.toml", "Gemfile")
 
 
-def _secrets_in_history(ingest: RepoIngest) -> list[Finding]:
+def _secrets_in_history(ingest: RepoIngest) -> tuple[list[Finding], int, int]:
+    """Returns (findings, high_confidence_count, test_fixture_count)."""
     findings: list[Finding] = []
     seen: set[str] = set()
+    high_confidence = 0
+    test_fixture = 0
     for record in ingest.full_patch_text().split("\x1e"):
         if not record.startswith("COMMIT "):
             continue
@@ -49,21 +73,33 @@ def _secrets_in_history(ingest: RepoIngest) -> list[Finding]:
                     if secret in seen:
                         continue
                     seen.add(secret)
-                    findings.append(Finding(
-                        module=MODULE,
-                        title=f"Secret in git history: {label}",
-                        severity=Severity.CRITICAL,
-                        summary=(
+                    if _looks_like_test_path(current_path):
+                        test_fixture += 1
+                        title = f"Possible test-fixture secret in git history: {label}"
+                        severity = Severity.LOW
+                        summary = (
+                            f"A {label.lower()} pattern was found in git history at a path that "
+                            f"looks like a test or fixture location. Likely a synthetic value used "
+                            f"to test credential-handling code rather than a genuine leak, but not "
+                            f"excluded automatically -- verify manually before dismissing."
+                        )
+                    else:
+                        high_confidence += 1
+                        title = f"Secret in git history: {label}"
+                        severity = Severity.CRITICAL
+                        summary = (
                             f"A {label.lower()} was committed to git history and remains "
                             f"recoverable from it even if removed from the working tree. "
                             f"It must be rotated and the history scrubbed."
-                        ),
+                        )
+                    findings.append(Finding(
+                        module=MODULE, title=title, severity=severity, summary=summary,
                         evidence=[Evidence(
                             description=f"introduced in commit {sha[:12]}",
                             path=current_path, detail=label,
                         )],
                     ))
-    return findings
+    return findings, high_confidence, test_fixture
 
 
 def _vulnerability_findings(ingest: RepoIngest) -> tuple[list[Finding], int]:
@@ -113,7 +149,7 @@ def analyze(ingest: RepoIngest) -> ModuleResult:
     fileset = set(files)
     findings: list[Finding] = []
 
-    secret_findings = _secrets_in_history(ingest)
+    secret_findings, secret_count, test_fixture_secret_count = _secrets_in_history(ingest)
     findings.extend(secret_findings)
 
     has_policy = any(f.upper() == "SECURITY.MD" for f in files)
@@ -155,7 +191,8 @@ def analyze(ingest: RepoIngest) -> ModuleResult:
     return ModuleResult(
         module=MODULE, status="ok", findings=findings,
         metrics={
-            "secret_count": len(secret_findings),
+            "secret_count": secret_count,
+            "test_fixture_secret_count": test_fixture_secret_count,
             "has_security_policy": has_policy,
             "manifest_age_days": manifest_age_days,
             "vulnerability_count": vulnerability_count,
