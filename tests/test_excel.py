@@ -81,3 +81,14 @@ def test_assumptions_sheet_carries_sources(tmp_path):
     ws = load_workbook(_write(tmp_path))["Assumptions"]
     values = [ws.cell(row=r, column=3).value for r in range(1, 25)]
     assert "press release" in [v for v in values if v]
+
+
+def test_assumptions_sheet_shows_every_pricing_input(tmp_path):
+    """Every cost assumption actually used by the pricing bridge must be
+    visible on the Assumptions tab, or the model can't be audited against
+    its own inputs (security_fix_cost_usd was missing until this test)."""
+    ws = load_workbook(_write(tmp_path))["Assumptions"]
+    labels = [ws.cell(row=r, column=1).value for r in range(1, 25)]
+    assert "Security fix cost (USD)" in labels
+    row = labels.index("Security fix cost (USD)") + 1
+    assert ws.cell(row=row, column=2).value == 50_000
