@@ -27,7 +27,7 @@ def _results() -> list[ModuleResult]:
             findings=[
                 Finding("bus_factor", "Single point of failure: payments/",
                         Severity.HIGH, "s"),
-                Finding("bus_factor", "Departed key contributor: dave@example.com",
+                Finding("bus_factor", "Key contributor inactive: dave@example.com",
                         Severity.HIGH, "s"),
             ],
         ),
