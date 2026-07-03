@@ -24,6 +24,7 @@ from acquirescope.dispositions import (
 )
 from acquirescope.excel import write_model
 from acquirescope.ingest import RepoIngest
+from acquirescope.interview_questions import generate_questions
 from acquirescope.models import Finding, ModuleResult
 from acquirescope.modules import bus_factor, delivery, hotspots, licenses, security
 from acquirescope.narrative import generate_narrative
@@ -50,13 +51,13 @@ def run_modules(ingest: RepoIngest) -> list[ModuleResult]:
     return results
 
 
-def _narrative_unavailable_reason() -> str | None:
+def _llm_unavailable_reason() -> str | None:
     try:
         import anthropic  # noqa: F401
     except ImportError:
-        return "--narrative requires the anthropic package: pip install acquirescope[llm]"
+        return "this feature requires the anthropic package: pip install acquirescope[llm]"
     if not (os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_AUTH_TOKEN")):
-        return "--narrative requires ANTHROPIC_API_KEY (or ANTHROPIC_AUTH_TOKEN) in the environment"
+        return "this feature requires ANTHROPIC_API_KEY (or ANTHROPIC_AUTH_TOKEN) in the environment"
     return None
 
 
@@ -88,11 +89,12 @@ def analyze(
     repo_path: Path = typer.Argument(..., exists=True, file_okay=False, help="Path to a local git repository"),
     output: Path = typer.Option(Path("dd-report.md"), "--output", "-o", help="Report output path"),
     narrative: bool = typer.Option(False, "--narrative", help="Prepend an LLM-generated, citation-verified executive narrative (requires acquirescope[llm] and an Anthropic API key)"),
+    questions: bool = typer.Option(False, "--questions", help="Generate an LLM-written 'question for management' per finding (requires acquirescope[llm] and an Anthropic API key)"),
     dispositions: Path = typer.Option(None, "--dispositions", help="Analyst disposition file (JSON) -- confirm/downgrade/dismiss findings; bootstrapped on first use"),
 ) -> None:
     """Run all due-diligence modules against REPO_PATH and write a markdown report."""
-    if narrative:
-        reason = _narrative_unavailable_reason()
+    if narrative or questions:
+        reason = _llm_unavailable_reason()
         if reason:
             typer.echo(reason, err=True)
             raise typer.Exit(code=1)
@@ -108,7 +110,16 @@ def analyze(
             narrative_text = generate_narrative(repo_path.name, results, _anthropic_complete)
         except Exception as exc:  # report must never be lost to a narrative failure
             typer.echo(f"Warning: narrative generation failed ({exc}); writing report without it.", err=True)
-    output.write_text(render_markdown(repo_path.name, results, narrative_text, dismissed), encoding="utf-8")
+    questions_map: dict[str, str] = {}
+    if questions:
+        try:
+            questions_map = generate_questions(repo_path.name, results, _anthropic_complete)
+        except Exception as exc:  # report must never be lost to a question-generation failure
+            typer.echo(f"Warning: question generation failed ({exc}); writing report without them.", err=True)
+    output.write_text(
+        render_markdown(repo_path.name, results, narrative_text, dismissed, questions_map),
+        encoding="utf-8",
+    )
     typer.echo(f"Report written to {output}")
 
 

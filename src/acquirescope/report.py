@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from acquirescope.dispositions import Disposition
+from acquirescope.dispositions import Disposition, compute_finding_id
 from acquirescope.models import Finding, ModuleResult
 
 DISCLAIMER = (
@@ -16,6 +16,7 @@ def render_markdown(
     results: list[ModuleResult],
     narrative: str | None = None,
     dismissed: list[tuple[Finding, Disposition]] | None = None,
+    questions: dict[str, str] | None = None,
 ) -> str:
     lines = [f"# Technical Due Diligence Report: {repo_name}", ""]
     if narrative:
@@ -47,6 +48,9 @@ def render_markdown(
                 location = f" (`{ev.path}`)" if ev.path else ""
                 detail = f" — {ev.detail}" if ev.detail else ""
                 lines.append(f"- Evidence: {ev.description}{location}{detail}")
+            if questions and (question := questions.get(compute_finding_id(finding))):
+                lines.append("")
+                lines.append(f"**Question for management:** {question}")
             lines.append("")
 
     lines.append("---")
