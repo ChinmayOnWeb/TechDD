@@ -15,9 +15,16 @@ from acquirescope.bridge.valuation import (
     dcf_valuation,
     sensitivity_grid,
 )
+from acquirescope.dispositions import (
+    Disposition,
+    apply_dispositions,
+    load_dispositions,
+    merge_dispositions,
+    save_dispositions,
+)
 from acquirescope.excel import write_model
 from acquirescope.ingest import RepoIngest
-from acquirescope.models import ModuleResult
+from acquirescope.models import Finding, ModuleResult
 from acquirescope.modules import bus_factor, delivery, hotspots, licenses, security
 from acquirescope.narrative import generate_narrative
 from acquirescope.report import render_markdown
@@ -53,6 +60,17 @@ def _narrative_unavailable_reason() -> str | None:
     return None
 
 
+def _resolve_dispositions(
+    path: Path | None, target_name: str, results: list[ModuleResult]
+) -> tuple[list[ModuleResult], list[tuple[Finding, Disposition]]]:
+    if path is None:
+        return results, []
+    existing = load_dispositions(path) if path.exists() else {}
+    merged = merge_dispositions(results, existing)
+    save_dispositions(path, target_name, merged)
+    return apply_dispositions(results, merged)
+
+
 def _anthropic_complete(prompt: str) -> str:
     import anthropic
 
@@ -70,6 +88,7 @@ def analyze(
     repo_path: Path = typer.Argument(..., exists=True, file_okay=False, help="Path to a local git repository"),
     output: Path = typer.Option(Path("dd-report.md"), "--output", "-o", help="Report output path"),
     narrative: bool = typer.Option(False, "--narrative", help="Prepend an LLM-generated, citation-verified executive narrative (requires acquirescope[llm] and an Anthropic API key)"),
+    dispositions: Path = typer.Option(None, "--dispositions", help="Analyst disposition file (JSON) -- confirm/downgrade/dismiss findings; bootstrapped on first use"),
 ) -> None:
     """Run all due-diligence modules against REPO_PATH and write a markdown report."""
     if narrative:
@@ -78,13 +97,18 @@ def analyze(
             typer.echo(reason, err=True)
             raise typer.Exit(code=1)
     results = run_modules(RepoIngest(repo_path))
+    try:
+        results, dismissed = _resolve_dispositions(dispositions, repo_path.name, results)
+    except ValueError as exc:
+        typer.echo(f"Invalid dispositions file: {exc}", err=True)
+        raise typer.Exit(code=1)
     narrative_text: str | None = None
     if narrative:
         try:
             narrative_text = generate_narrative(repo_path.name, results, _anthropic_complete)
         except Exception as exc:  # report must never be lost to a narrative failure
             typer.echo(f"Warning: narrative generation failed ({exc}); writing report without it.", err=True)
-    output.write_text(render_markdown(repo_path.name, results, narrative_text), encoding="utf-8")
+    output.write_text(render_markdown(repo_path.name, results, narrative_text, dismissed), encoding="utf-8")
     typer.echo(f"Report written to {output}")
 
 
@@ -93,6 +117,7 @@ def model(
     repo_path: Path = typer.Argument(..., exists=True, file_okay=False, help="Path to a local git repository"),
     assumptions_file: Path = typer.Option(..., "--assumptions", "-a", exists=True, dir_okay=False, help="Analyst assumptions TOML"),
     output: Path = typer.Option(Path("dd-model.xlsx"), "--output", "-o", help="Excel model output path"),
+    dispositions: Path = typer.Option(None, "--dispositions", help="Analyst disposition file (JSON) -- confirm/downgrade/dismiss findings before pricing"),
 ) -> None:
     """Run the engine, price the findings, and write the Excel valuation model."""
     try:
@@ -102,6 +127,11 @@ def model(
         raise typer.Exit(code=1)
 
     results = run_modules(RepoIngest(repo_path))
+    try:
+        results, _dismissed = _resolve_dispositions(dispositions, repo_path.name, results)
+    except ValueError as exc:
+        typer.echo(f"Invalid dispositions file: {exc}", err=True)
+        raise typer.Exit(code=1)
     comps = comps_valuation(assumptions)
     dcf = dcf_valuation(assumptions)
     pre_dd_ev_mid = blended_pre_dd_ev_mid(comps, dcf)

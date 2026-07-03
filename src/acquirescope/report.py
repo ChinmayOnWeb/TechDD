@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from acquirescope.models import ModuleResult
+from acquirescope.dispositions import Disposition
+from acquirescope.models import Finding, ModuleResult
 
 DISCLAIMER = (
     "*This report is an automated, educational analysis of publicly available "
@@ -11,7 +12,10 @@ DISCLAIMER = (
 
 
 def render_markdown(
-    repo_name: str, results: list[ModuleResult], narrative: str | None = None
+    repo_name: str,
+    results: list[ModuleResult],
+    narrative: str | None = None,
+    dismissed: list[tuple[Finding, Disposition]] | None = None,
 ) -> str:
     lines = [f"# Technical Due Diligence Report: {repo_name}", ""]
     if narrative:
@@ -49,4 +53,19 @@ def render_markdown(
     lines.append("")
     lines.append(DISCLAIMER)
     lines.append("")
+
+    if dismissed:
+        lines.append("## Appendix: Dismissed Findings (Analyst-Reviewed)")
+        lines.append("")
+        lines.append(
+            "The findings below were reviewed and dismissed by the analyst. They do not "
+            "appear in the report body above or in the priced valuation adjustments."
+        )
+        lines.append("")
+        for finding, disposition in dismissed:
+            lines.append(f"### [{finding.severity.value.upper()}] {finding.title}")
+            lines.append("")
+            lines.append(f"Dismissed — {disposition.note}")
+            lines.append("")
+
     return "\n".join(lines)
