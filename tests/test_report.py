@@ -60,3 +60,32 @@ def test_dismissed_appendix_rendered_after_disclaimer():
 def test_no_appendix_when_nothing_dismissed():
     md = render_markdown("target-repo", _sample_results())
     assert "Appendix: Dismissed" not in md
+
+
+def test_question_rendered_for_matching_finding():
+    finding = _sample_results()[0].findings[0]
+    from acquirescope.dispositions import compute_finding_id
+    fid = compute_finding_id(finding)
+    md = render_markdown("target-repo", _sample_results(), questions={fid: "Who owns this dependency risk?"})
+    assert "**Question for management:** Who owns this dependency risk?" in md
+
+
+def test_no_question_line_when_no_match():
+    md = render_markdown("target-repo", _sample_results(), questions={"nonexistent000": "orphan question"})
+    assert "Question for management" not in md
+
+
+def test_dismissed_finding_never_shows_question():
+    from acquirescope.dispositions import Disposition, compute_finding_id
+    finding = _sample_results()[0].findings[0]
+    fid = compute_finding_id(finding)
+    disposition = Disposition(status="dismissed", severity_override=None, note="not real", finding_title=finding.title)
+    # In real usage apply_dispositions already removed `finding` from results
+    # before render_markdown is called -- simulate that here rather than
+    # asking render_markdown itself to reconcile results against dismissed.
+    empty_results = [ModuleResult(module="licenses", status="ok", findings=[])]
+    md = render_markdown(
+        "target-repo", empty_results, dismissed=[(finding, disposition)],
+        questions={fid: "Should not appear"},
+    )
+    assert "Should not appear" not in md
