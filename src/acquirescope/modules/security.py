@@ -70,7 +70,7 @@ def _secrets_in_history(ingest: RepoIngest) -> tuple[list[Finding], int, int]:
     seen: set[str] = set()
     high_confidence = 0
     low_confidence = 0
-    for record in ingest.full_patch_text().split("\x1e"):
+    for record in ingest.iter_patch_records():
         if not record.startswith("COMMIT "):
             continue
         header, _, body = record.partition("\n")

@@ -81,3 +81,28 @@ class RepoIngest:
         if self._patch_text is None:
             self._patch_text = self._git("log", "-p", "--format=%x1eCOMMIT %H")
         return self._patch_text
+
+    def iter_patch_records(self):
+        """Yields each commit's 'COMMIT <sha>\\n<diff>' record from git log -p one at a
+        time, streaming git's stdout instead of buffering the full history in memory.
+        Equivalent in content to full_patch_text().split("\\x1e"), but memory use is
+        bounded by the largest single commit's diff rather than total history size --
+        needed for repos where a full-history patch text can exceed available RAM."""
+        proc = subprocess.Popen(
+            ["git", "-C", str(self.repo_path), "log", "-p", "--format=%x1eCOMMIT %H"],
+            stdout=subprocess.PIPE, text=True, encoding="utf-8", errors="replace",
+        )
+        assert proc.stdout is not None
+        buffer = ""
+        try:
+            for chunk in iter(lambda: proc.stdout.read(1 << 20), ""):
+                buffer += chunk
+                *records, buffer = buffer.split("\x1e")
+                yield from records
+            if buffer:
+                yield buffer
+        finally:
+            proc.stdout.close()
+            returncode = proc.wait()
+        if returncode != 0:
+            raise subprocess.CalledProcessError(returncode, proc.args)
