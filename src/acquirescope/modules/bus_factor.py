@@ -67,7 +67,11 @@ def analyze(ingest: RepoIngest) -> ModuleResult:
                 )],
             ))
 
-    # Departed key contributors.
+    # High-share contributors who have gone quiet. The engine can only see
+    # commit activity, not why it stopped -- it cannot distinguish a genuine
+    # departure from a founder moving into a non-coding leadership role, a
+    # maintainer handoff, or an extended leave. Report the observed fact
+    # (inactivity) rather than asserting the unverifiable one (departure).
     author_totals = Counter(c.author_email for c in commits)
     total_commits = len(commits)
     latest = max(c.authored_at for c in commits)
@@ -82,11 +86,15 @@ def analyze(ingest: RepoIngest) -> ModuleResult:
         if share >= DEPARTED_SHARE and inactive_days > DEPARTED_DAYS:
             findings.append(Finding(
                 module=MODULE,
-                title=f"Departed key contributor: {author}",
+                title=f"Key contributor inactive: {author}",
                 severity=Severity.HIGH,
                 summary=(
-                    f"{author} authored {share:.0%} of all commits but has been inactive "
-                    f"for {inactive_days} days. Their knowledge may already be lost."
+                    f"{author} authored {share:.0%} of all commits but has not committed "
+                    f"in {inactive_days} days. This is consistent with departure, but also "
+                    f"with a shift to a non-coding role (e.g. a founder moving into an "
+                    f"executive position) or an extended leave -- verify this person's "
+                    f"current relationship with the project before treating it as a "
+                    f"departure or knowledge-loss risk."
                 ),
                 evidence=[Evidence(
                     description=f"{count}/{total_commits} commits; last active {last_seen[author].date()}",

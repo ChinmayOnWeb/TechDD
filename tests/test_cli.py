@@ -45,8 +45,8 @@ def test_all_planted_issues_detected_end_to_end(fixture_repo, tmp_path, monkeypa
     assert "Copyleft dependency: mysqlclient" in md
     # Planted issue 3: churn+complexity hotspot
     assert "Tech-debt hotspot: core/engine.py" in md
-    # Planted issue 4: departed key contributor
-    assert "Departed key contributor: dave@example.com" in md
+    # Planted issue 4: inactive key contributor
+    assert "Key contributor inactive: dave@example.com" in md
     # Confidence band present in metrics line
     assert "remediation_months_low" in md
     # Phase 3 planted issue: committed-then-removed AWS key

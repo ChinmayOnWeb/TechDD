@@ -45,6 +45,37 @@ def test_full_patch_text_contains_planted_secret(fixture_repo):
     assert ingest.full_patch_text() is text  # cached
 
 
+def test_iter_patch_records_matches_full_patch_text(fixture_repo):
+    ingest = RepoIngest(Path(fixture_repo))
+    streamed = list(ingest.iter_patch_records())
+    expected = ingest.full_patch_text().split("\x1e")
+    assert streamed == expected
+
+
+def test_iter_patch_records_contains_planted_secret(fixture_repo):
+    ingest = RepoIngest(Path(fixture_repo))
+    records = list(ingest.iter_patch_records())
+    assert any("AKIAIOSFODNN7EXAMPLE" in r for r in records)
+    assert all(r.startswith("COMMIT ") for r in records if r)
+
+
+def test_iter_patch_records_survives_invalid_utf8_bytes(tmp_path):
+    repo = tmp_path / "badenc_stream"
+    subprocess.run(["git", "init", str(repo)], check=True, capture_output=True)
+    (repo / "bad.txt").write_bytes(b"marker_before\n\xbf\xbf\xbf\nmarker_after\n")
+    subprocess.run(["git", "-C", str(repo), "add", "bad.txt"], check=True, capture_output=True)
+    subprocess.run(
+        ["git", "-C", str(repo), "-c", "user.name=t", "-c", "user.email=t@example.com",
+         "commit", "-m", "add file with invalid utf-8 bytes"],
+        check=True, capture_output=True,
+    )
+    ingest = RepoIngest(repo)
+    records = list(ingest.iter_patch_records())  # must not raise
+    joined = "".join(records)
+    assert "marker_before" in joined
+    assert "marker_after" in joined
+
+
 def test_git_output_survives_invalid_utf8_bytes(tmp_path):
     """Real repos can contain non-UTF-8 bytes in a diff (binary blobs git
     misdetects as text, legacy-encoded fixtures, etc). A strict utf-8 decode
