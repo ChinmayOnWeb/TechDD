@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import hashlib
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
-from acquirescope.models import Finding, Severity
+from acquirescope.models import Finding, ModuleResult, Severity
 
 _VALID_STATUSES = {"pending", "confirmed", "downgraded", "dismissed"}
 
@@ -77,4 +77,28 @@ def save_dispositions(path: Path, target_name: str, dispositions: dict[str, Disp
             for finding_id, d in dispositions.items()
         },
     }
+    path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+
+
+def merge_dispositions(
+    results: list[ModuleResult], existing: dict[str, Disposition]
+) -> dict[str, Disposition]:
+    """Combine the current finding set with previously-saved dispositions.
+    Existing entries are kept (with finding_title refreshed); new findings
+    are added as 'pending'; entries for findings no longer detected are
+    dropped -- there is nothing left to disposition."""
+    merged: dict[str, Disposition] = {}
+    for result in results:
+        if result.status != "ok":
+            continue
+        for finding in result.findings:
+            finding_id = compute_finding_id(finding)
+            prior = existing.get(finding_id)
+            if prior is not None:
+                merged[finding_id] = replace(prior, finding_title=finding.title)
+            else:
+                merged[finding_id] = Disposition(
+                    status="pending", severity_override=None, note="", finding_title=finding.title,
+                )
+    return merged
     path.write_text(json.dumps(payload, indent=2), encoding="utf-8")

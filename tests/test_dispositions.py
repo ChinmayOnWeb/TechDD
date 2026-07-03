@@ -2,8 +2,14 @@ import json
 
 import pytest
 
-from acquirescope.dispositions import Disposition, compute_finding_id, load_dispositions, save_dispositions
-from acquirescope.models import Evidence, Finding, Severity
+from acquirescope.dispositions import (
+    Disposition,
+    compute_finding_id,
+    load_dispositions,
+    merge_dispositions,
+    save_dispositions,
+)
+from acquirescope.models import Evidence, Finding, ModuleResult, Severity
 
 
 def _finding(title="Some finding", path="a/b.py", detail="x") -> Finding:
@@ -59,3 +65,38 @@ def test_load_rejects_malformed_json(tmp_path):
     path.write_text("{not valid json", encoding="utf-8")
     with pytest.raises(ValueError, match="invalid dispositions JSON"):
         load_dispositions(path)
+
+
+def test_merge_adds_new_findings_as_pending():
+    results = [ModuleResult(module="bus_factor", status="ok", findings=[_finding()])]
+    merged = merge_dispositions(results, {})
+    assert len(merged) == 1
+    [disposition] = merged.values()
+    assert disposition.status == "pending"
+    assert disposition.finding_title == "Some finding"
+
+
+def test_merge_preserves_existing_and_refreshes_title():
+    finding = _finding()
+    fid = compute_finding_id(finding)
+    existing = {fid: Disposition(status="dismissed", severity_override=None,
+                                  note="stale note", finding_title="Old Title")}
+    results = [ModuleResult(module="bus_factor", status="ok", findings=[finding])]
+    merged = merge_dispositions(results, existing)
+    assert merged[fid].status == "dismissed"
+    assert merged[fid].note == "stale note"
+    assert merged[fid].finding_title == "Some finding"
+
+
+def test_merge_drops_stale_entries_for_findings_no_longer_present():
+    existing = {"nolongerexists": Disposition(status="confirmed", severity_override=None,
+                                               note="", finding_title="Gone")}
+    results = [ModuleResult(module="bus_factor", status="ok", findings=[])]
+    merged = merge_dispositions(results, existing)
+    assert merged == {}
+
+
+def test_merge_skips_failed_modules():
+    results = [ModuleResult(module="hotspots", status="failed", error="boom")]
+    merged = merge_dispositions(results, {})
+    assert merged == {}
