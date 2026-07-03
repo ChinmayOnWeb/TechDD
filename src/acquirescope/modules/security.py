@@ -21,15 +21,22 @@ _SECRET_PATTERNS = [
 ]
 
 # Test suites for credential-handling code routinely commit synthetic secrets
-# on purpose (AWS's own docs even publish a well-known example access key).
-# A hit under one of these path segments is real signal but not an
-# actionable "must rotate" finding -- downgrade confidence instead of
-# discarding it outright.
+# on purpose (AWS's own docs even publish a well-known example access key),
+# and user-facing integration docs/onboarding snippets show example config
+# values for the same reason. A hit under one of these path segments is real
+# signal but not an actionable "must rotate" finding -- downgrade confidence
+# instead of discarding it outright.
 _LOW_CONFIDENCE_PATH_MARKERS = frozenset({
     "test", "tests", "testing", "__tests__", "spec", "specs",
     "fixture", "fixtures", "evaluation", "evaluations",
     "mock", "mocks", "example", "examples", "sample", "samples",
+    "docs", "doc", "onboarding", "guide", "guides",
+    "snippet", "snippets", "demo", "demos",
 })
+
+# Documentation file formats are prose by construction -- a matched pattern
+# there is a usage example, not embedded key material.
+_LOW_CONFIDENCE_EXTENSIONS = (".md", ".mdx")
 
 
 def _looks_like_test_path(path: str | None) -> bool:
@@ -39,6 +46,13 @@ def _looks_like_test_path(path: str | None) -> bool:
     if any(seg in _LOW_CONFIDENCE_PATH_MARKERS for seg in segments):
         return True
     filename = segments[-1]
+    if filename.endswith(_LOW_CONFIDENCE_EXTENSIONS):
+        return True
+    # Python/pytest convention: test_foo.py or foo_test.py, no "test"
+    # directory segment required.
+    stem = filename.rsplit(".", 1)[0] if "." in filename else filename
+    if stem.startswith("test_") or stem.endswith("_test"):
+        return True
     return ".test." in filename or ".spec." in filename
 
 

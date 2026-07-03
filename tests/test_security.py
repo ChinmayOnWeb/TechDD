@@ -76,6 +76,60 @@ def test_private_key_mention_in_prose_downgraded(tmp_path, monkeypatch):
     assert result.metrics["low_confidence_secret_count"] == 1
 
 
+def test_python_test_prefix_filename_downgraded(tmp_path, monkeypatch):
+    """pytest/Django's test_*.py naming convention doesn't require a 'test/'
+    or 'tests/' directory segment -- a file can be a test purely by its
+    filename prefix. Real PostHog/Sentry findings showed this gap: e.g.
+    posthog/api/oauth/test_views.py was misclassified as CRITICAL."""
+    _no_osv(monkeypatch)
+    repo = _tiny_repo(
+        tmp_path, "posthog/api/oauth/test_views.py",
+        'AWS_KEY = "AKIAIOSFODNN7EXAMPLE"\n',
+    )
+    result = security.analyze(RepoIngest(repo))
+    matches = [f for f in result.findings if "AWS access key" in f.title]
+    assert len(matches) == 1
+    assert matches[0].severity == Severity.LOW
+    assert result.metrics["secret_count"] == 0
+    assert result.metrics["low_confidence_secret_count"] == 1
+
+
+def test_onboarding_docs_path_downgraded(tmp_path, monkeypatch):
+    """User-facing integration docs showing example config snippets are not
+    real secrets. Real Sentry/Supabase/PostHog findings showed this gap:
+    e.g. docs/onboarding/llm-analytics/google.tsx and
+    static/app/components/onboarding/gettingStartedDoc/onboardingCodeSnippet.tsx."""
+    _no_osv(monkeypatch)
+    repo = _tiny_repo(
+        tmp_path, "docs/onboarding/llm-analytics/google.tsx",
+        'const apiKey = "AKIAIOSFODNN7EXAMPLE";\n',
+    )
+    result = security.analyze(RepoIngest(repo))
+    matches = [f for f in result.findings if "AWS access key" in f.title]
+    assert len(matches) == 1
+    assert matches[0].severity == Severity.LOW
+    assert result.metrics["secret_count"] == 0
+    assert result.metrics["low_confidence_secret_count"] == 1
+
+
+def test_markdown_file_always_downgraded(tmp_path, monkeypatch):
+    """Markdown/MDX files are documentation prose by construction -- a
+    matched pattern there is a usage example, not embedded key material.
+    Real finding: services/llm-gateway/README.md and
+    apps/docs/pages/guides/ai/integrations/roboflow.mdx."""
+    _no_osv(monkeypatch)
+    repo = _tiny_repo(
+        tmp_path, "services/llm-gateway/README.md",
+        'Set your key: aws_key = "AKIAIOSFODNN7EXAMPLE"\n',
+    )
+    result = security.analyze(RepoIngest(repo))
+    matches = [f for f in result.findings if "AWS access key" in f.title]
+    assert len(matches) == 1
+    assert matches[0].severity == Severity.LOW
+    assert result.metrics["secret_count"] == 0
+    assert result.metrics["low_confidence_secret_count"] == 1
+
+
 def test_secret_removed_from_head_still_flagged(fixture_repo, monkeypatch):
     _no_osv(monkeypatch)
     assert "AKIA" not in (Path(fixture_repo) / "config" / "settings.py").read_text(encoding="utf-8")
