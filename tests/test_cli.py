@@ -115,7 +115,7 @@ def test_planted_issues_priced_in_model_end_to_end(fixture_repo, tmp_path, monke
 
 
 def test_narrative_unavailable_exits_1(fixture_repo, tmp_path, monkeypatch):
-    monkeypatch.setattr(cli, "_narrative_unavailable_reason", lambda: "no key")
+    monkeypatch.setattr(cli, "_llm_unavailable_reason", lambda: "no key")
     out = tmp_path / "r.md"
     result = runner.invoke(cli.app, ["analyze", str(fixture_repo), "--output", str(out), "--narrative"])
     assert result.exit_code == 1
@@ -123,7 +123,7 @@ def test_narrative_unavailable_exits_1(fixture_repo, tmp_path, monkeypatch):
 
 
 def test_narrative_section_written_with_fake_completer(fixture_repo, tmp_path, monkeypatch):
-    monkeypatch.setattr(cli, "_narrative_unavailable_reason", lambda: None)
+    monkeypatch.setattr(cli, "_llm_unavailable_reason", lambda: None)
     monkeypatch.setattr(cli, "_anthropic_complete",
                         lambda prompt: "Key-person risk dominates [E1]. Fake [E99].")
     out = tmp_path / "r.md"
@@ -137,7 +137,7 @@ def test_narrative_section_written_with_fake_completer(fixture_repo, tmp_path, m
 
 
 def test_narrative_api_failure_degrades_to_plain_report(fixture_repo, tmp_path, monkeypatch):
-    monkeypatch.setattr(cli, "_narrative_unavailable_reason", lambda: None)
+    monkeypatch.setattr(cli, "_llm_unavailable_reason", lambda: None)
 
     def boom(prompt):
         raise RuntimeError("api down")
@@ -236,3 +236,46 @@ def test_dismissed_finding_excluded_from_model_pricing(fixture_repo, tmp_path, m
     # single-owner + dave inactive); with dave dismissed, only 1 remains,
     # so retention prices at 1 x $300,000 instead of 2 x $300,000.
     assert adj["C3"].value == 300_000
+
+
+def test_questions_unavailable_exits_1(fixture_repo, tmp_path, monkeypatch):
+    monkeypatch.setattr(cli, "_llm_unavailable_reason", lambda: "no key")
+    out = tmp_path / "r.md"
+    result = runner.invoke(cli.app, ["analyze", str(fixture_repo), "--output", str(out), "--questions"])
+    assert result.exit_code == 1
+    assert not out.exists()
+
+
+def test_questions_rendered_with_fake_completer(fixture_repo, tmp_path, monkeypatch):
+    monkeypatch.setattr("acquirescope.modules.security.shutil.which", lambda _: None)
+    monkeypatch.setattr(cli, "_llm_unavailable_reason", lambda: None)
+
+    def fake_complete(prompt: str) -> str:
+        import re
+        real_id = re.search(r"\[([0-9a-f]{12})\] .*Single point of failure: payments/", prompt).group(1)
+        return json.dumps({real_id: "Who owns payments/ if the current maintainer is unavailable?",
+                            "bogus000000": "Should be dropped"})
+
+    monkeypatch.setattr(cli, "_anthropic_complete", fake_complete)
+    out = tmp_path / "r.md"
+    result = runner.invoke(cli.app, ["analyze", str(fixture_repo), "--output", str(out), "--questions"])
+    assert result.exit_code == 0
+    md = out.read_text(encoding="utf-8")
+    assert "**Question for management:** Who owns payments/ if the current maintainer is unavailable?" in md
+    assert "Should be dropped" not in md
+
+
+def test_questions_failure_degrades_to_plain_report(fixture_repo, tmp_path, monkeypatch):
+    monkeypatch.setattr("acquirescope.modules.security.shutil.which", lambda _: None)
+    monkeypatch.setattr(cli, "_llm_unavailable_reason", lambda: None)
+
+    def boom(prompt: str) -> str:
+        raise RuntimeError("api down")
+
+    monkeypatch.setattr(cli, "_anthropic_complete", boom)
+    out = tmp_path / "r.md"
+    result = runner.invoke(cli.app, ["analyze", str(fixture_repo), "--output", str(out), "--questions"])
+    assert result.exit_code == 0
+    md = out.read_text(encoding="utf-8")
+    assert "Question for management" not in md
+    assert "# Technical Due Diligence Report:" in md
