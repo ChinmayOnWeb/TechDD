@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 from typer.testing import CliRunner
@@ -148,3 +149,37 @@ def test_narrative_api_failure_degrades_to_plain_report(fixture_repo, tmp_path, 
     md = out.read_text(encoding="utf-8")
     assert "Executive narrative" not in md
     assert "# Technical Due Diligence Report:" in md
+
+
+def test_dispositions_bootstrap_creates_pending_file(fixture_repo, tmp_path, monkeypatch):
+    monkeypatch.setattr("acquirescope.modules.security.shutil.which", lambda _: None)
+    out = tmp_path / "report.md"
+    disp_path = tmp_path / "dispositions.json"
+    result = runner.invoke(cli.app, [
+        "analyze", str(fixture_repo), "--output", str(out), "--dispositions", str(disp_path),
+    ])
+    assert result.exit_code == 0
+    assert disp_path.exists()
+    data = json.loads(disp_path.read_text(encoding="utf-8"))
+    assert data["dispositions"]
+    assert all(v["status"] == "pending" for v in data["dispositions"].values())
+
+
+def test_malformed_dispositions_file_exits_1(fixture_repo, tmp_path):
+    out = tmp_path / "report.md"
+    disp_path = tmp_path / "bad.json"
+    disp_path.write_text("{not valid", encoding="utf-8")
+    result = runner.invoke(cli.app, [
+        "analyze", str(fixture_repo), "--output", str(out), "--dispositions", str(disp_path),
+    ])
+    assert result.exit_code == 1
+    assert not out.exists()
+
+
+def test_dispositions_omitted_behaves_identically_to_before(fixture_repo, tmp_path, monkeypatch):
+    monkeypatch.setattr("acquirescope.modules.security.shutil.which", lambda _: None)
+    out = tmp_path / "report.md"
+    result = runner.invoke(cli.app, ["analyze", str(fixture_repo), "--output", str(out)])
+    assert result.exit_code == 0
+    md = out.read_text(encoding="utf-8")
+    assert "Appendix: Dismissed" not in md
