@@ -183,3 +183,56 @@ def test_dispositions_omitted_behaves_identically_to_before(fixture_repo, tmp_pa
     assert result.exit_code == 0
     md = out.read_text(encoding="utf-8")
     assert "Appendix: Dismissed" not in md
+
+
+def _dismiss_dave_inactive_finding(disp_path: Path) -> None:
+    data = json.loads(disp_path.read_text(encoding="utf-8"))
+    target_id = next(
+        fid for fid, v in data["dispositions"].items()
+        if v["finding_title"] == "Key contributor inactive: dave@example.com"
+    )
+    data["dispositions"][target_id]["status"] = "dismissed"
+    data["dispositions"][target_id]["note"] = "Confirmed still active via LinkedIn"
+    disp_path.write_text(json.dumps(data), encoding="utf-8")
+
+
+def test_dismissed_disposition_removes_finding_from_report(fixture_repo, tmp_path, monkeypatch):
+    monkeypatch.setattr("acquirescope.modules.security.shutil.which", lambda _: None)
+    out = tmp_path / "report.md"
+    disp_path = tmp_path / "dispositions.json"
+    # First run: bootstrap the dispositions file (all pending).
+    runner.invoke(cli.app, ["analyze", str(fixture_repo), "--output", str(out), "--dispositions", str(disp_path)])
+    _dismiss_dave_inactive_finding(disp_path)
+
+    # Second run: apply the analyst's dismissal.
+    result = runner.invoke(cli.app, ["analyze", str(fixture_repo), "--output", str(out), "--dispositions", str(disp_path)])
+    assert result.exit_code == 0
+    md = out.read_text(encoding="utf-8")
+    body, _, appendix = md.partition("## Appendix: Dismissed Findings")
+    assert "Key contributor inactive: dave@example.com" not in body
+    assert "Key contributor inactive: dave@example.com" in appendix
+    assert "Confirmed still active via LinkedIn" in appendix
+
+
+def test_dismissed_finding_excluded_from_model_pricing(fixture_repo, tmp_path, monkeypatch):
+    from openpyxl import load_workbook
+
+    monkeypatch.setattr("acquirescope.modules.security.shutil.which", lambda _: None)
+    example = Path(__file__).parent.parent / "examples" / "assumptions.example.toml"
+    out = tmp_path / "report.md"
+    disp_path = tmp_path / "dispositions.json"
+    runner.invoke(cli.app, ["analyze", str(fixture_repo), "--output", str(out), "--dispositions", str(disp_path)])
+    _dismiss_dave_inactive_finding(disp_path)
+
+    xlsx_out = tmp_path / "model.xlsx"
+    result = runner.invoke(cli.app, [
+        "model", str(fixture_repo), "--assumptions", str(example),
+        "--output", str(xlsx_out), "--dispositions", str(disp_path),
+    ])
+    assert result.exit_code == 0
+    wb = load_workbook(xlsx_out)
+    adj = wb["DD Adjustments"]
+    # Fixture's bus_factor produces exactly 2 findings normally (payments/
+    # single-owner + dave inactive); with dave dismissed, only 1 remains,
+    # so retention prices at 1 x $300,000 instead of 2 x $300,000.
+    assert adj["C3"].value == 300_000
