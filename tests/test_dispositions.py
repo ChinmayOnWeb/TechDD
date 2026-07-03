@@ -4,6 +4,7 @@ import pytest
 
 from acquirescope.dispositions import (
     Disposition,
+    apply_dispositions,
     compute_finding_id,
     load_dispositions,
     merge_dispositions,
@@ -100,3 +101,53 @@ def test_merge_skips_failed_modules():
     results = [ModuleResult(module="hotspots", status="failed", error="boom")]
     merged = merge_dispositions(results, {})
     assert merged == {}
+
+
+def test_apply_pending_and_confirmed_pass_through():
+    finding = _finding()
+    fid = compute_finding_id(finding)
+    results = [ModuleResult(module="bus_factor", status="ok", findings=[finding])]
+    dispositions = {fid: Disposition(status="confirmed", severity_override=None,
+                                      note="", finding_title=finding.title)}
+    filtered, dismissed = apply_dispositions(results, dispositions)
+    assert filtered[0].findings == [finding]
+    assert dismissed == []
+
+
+def test_apply_downgraded_overrides_severity():
+    finding = _finding()  # HIGH
+    fid = compute_finding_id(finding)
+    results = [ModuleResult(module="bus_factor", status="ok", findings=[finding])]
+    dispositions = {fid: Disposition(status="downgraded", severity_override=Severity.LOW,
+                                      note="minor", finding_title=finding.title)}
+    filtered, dismissed = apply_dispositions(results, dispositions)
+    assert filtered[0].findings[0].severity == Severity.LOW
+    assert filtered[0].findings[0].title == finding.title
+    assert finding.severity == Severity.HIGH  # original object untouched
+
+
+def test_apply_dismissed_removed_and_captured():
+    finding = _finding()
+    fid = compute_finding_id(finding)
+    results = [ModuleResult(module="bus_factor", status="ok", findings=[finding])]
+    disposition = Disposition(status="dismissed", severity_override=None,
+                               note="not real", finding_title=finding.title)
+    filtered, dismissed = apply_dispositions(results, {fid: disposition})
+    assert filtered[0].findings == []
+    assert dismissed == [(finding, disposition)]
+
+
+def test_apply_no_entry_passes_through():
+    finding = _finding()
+    results = [ModuleResult(module="bus_factor", status="ok", findings=[finding])]
+    filtered, dismissed = apply_dispositions(results, {})
+    assert filtered[0].findings == [finding]
+    assert dismissed == []
+
+
+def test_apply_failed_module_untouched():
+    results = [ModuleResult(module="hotspots", status="failed", error="boom")]
+    filtered, dismissed = apply_dispositions(results, {})
+    assert filtered[0].status == "failed"
+    assert filtered[0].error == "boom"
+    assert dismissed == []

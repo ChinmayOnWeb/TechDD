@@ -101,4 +101,30 @@ def merge_dispositions(
                     status="pending", severity_override=None, note="", finding_title=finding.title,
                 )
     return merged
+
+
+def apply_dispositions(
+    results: list[ModuleResult], dispositions: dict[str, Disposition]
+) -> tuple[list[ModuleResult], list[tuple[Finding, Disposition]]]:
+    """Filter/transform findings per their disposition. pending/confirmed/no
+    entry -> unchanged; downgraded -> severity replaced; dismissed -> removed
+    from the module's findings and returned separately for the report
+    appendix. status="failed" modules pass through untouched."""
+    dismissed: list[tuple[Finding, Disposition]] = []
+    new_results: list[ModuleResult] = []
+    for result in results:
+        if result.status != "ok":
+            new_results.append(result)
+            continue
+        kept: list[Finding] = []
+        for finding in result.findings:
+            disposition = dispositions.get(compute_finding_id(finding))
+            if disposition is None or disposition.status in ("pending", "confirmed"):
+                kept.append(finding)
+            elif disposition.status == "downgraded":
+                kept.append(replace(finding, severity=disposition.severity_override))
+            elif disposition.status == "dismissed":
+                dismissed.append((finding, disposition))
+        new_results.append(replace(result, findings=kept))
+    return new_results, dismissed
     path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
