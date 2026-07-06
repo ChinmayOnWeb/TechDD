@@ -3,7 +3,7 @@ from pathlib import Path
 
 from typer.testing import CliRunner
 
-from acquirescope import cli
+from git_due_diligence import cli
 
 runner = CliRunner()
 
@@ -34,7 +34,7 @@ def test_module_crash_degrades_gracefully(fixture_repo, tmp_path, monkeypatch):
 
 def test_all_planted_issues_detected_end_to_end(fixture_repo, tmp_path, monkeypatch):
     """Spec regression gate: every planted issue in the synthetic repo is found."""
-    monkeypatch.setattr("acquirescope.modules.security.shutil.which", lambda _: None)
+    monkeypatch.setattr("git_due_diligence.modules.security.shutil.which", lambda _: None)
     out = tmp_path / "e2e-report.md"
     result = runner.invoke(cli.app, ["analyze", str(fixture_repo), "--output", str(out)])
     assert result.exit_code == 0
@@ -87,7 +87,7 @@ def test_planted_issues_priced_in_model_end_to_end(fixture_repo, tmp_path, monke
     """Phase 2 regression gate: planted DD issues become priced line items."""
     from openpyxl import load_workbook
 
-    monkeypatch.setattr("acquirescope.modules.security.shutil.which", lambda _: None)
+    monkeypatch.setattr("git_due_diligence.modules.security.shutil.which", lambda _: None)
     example = Path(__file__).parent.parent / "examples" / "assumptions.example.toml"
     out = tmp_path / "e2e-model.xlsx"
     result = runner.invoke(cli.app, [
@@ -152,7 +152,7 @@ def test_narrative_api_failure_degrades_to_plain_report(fixture_repo, tmp_path, 
 
 
 def test_dispositions_bootstrap_creates_pending_file(fixture_repo, tmp_path, monkeypatch):
-    monkeypatch.setattr("acquirescope.modules.security.shutil.which", lambda _: None)
+    monkeypatch.setattr("git_due_diligence.modules.security.shutil.which", lambda _: None)
     out = tmp_path / "report.md"
     disp_path = tmp_path / "dispositions.json"
     result = runner.invoke(cli.app, [
@@ -177,7 +177,7 @@ def test_malformed_dispositions_file_exits_1(fixture_repo, tmp_path):
 
 
 def test_dispositions_omitted_behaves_identically_to_before(fixture_repo, tmp_path, monkeypatch):
-    monkeypatch.setattr("acquirescope.modules.security.shutil.which", lambda _: None)
+    monkeypatch.setattr("git_due_diligence.modules.security.shutil.which", lambda _: None)
     out = tmp_path / "report.md"
     result = runner.invoke(cli.app, ["analyze", str(fixture_repo), "--output", str(out)])
     assert result.exit_code == 0
@@ -197,7 +197,7 @@ def _dismiss_dave_inactive_finding(disp_path: Path) -> None:
 
 
 def test_dismissed_disposition_removes_finding_from_report(fixture_repo, tmp_path, monkeypatch):
-    monkeypatch.setattr("acquirescope.modules.security.shutil.which", lambda _: None)
+    monkeypatch.setattr("git_due_diligence.modules.security.shutil.which", lambda _: None)
     out = tmp_path / "report.md"
     disp_path = tmp_path / "dispositions.json"
     # First run: bootstrap the dispositions file (all pending).
@@ -217,7 +217,7 @@ def test_dismissed_disposition_removes_finding_from_report(fixture_repo, tmp_pat
 def test_dismissed_finding_excluded_from_model_pricing(fixture_repo, tmp_path, monkeypatch):
     from openpyxl import load_workbook
 
-    monkeypatch.setattr("acquirescope.modules.security.shutil.which", lambda _: None)
+    monkeypatch.setattr("git_due_diligence.modules.security.shutil.which", lambda _: None)
     example = Path(__file__).parent.parent / "examples" / "assumptions.example.toml"
     out = tmp_path / "report.md"
     disp_path = tmp_path / "dispositions.json"
@@ -247,7 +247,7 @@ def test_questions_unavailable_exits_1(fixture_repo, tmp_path, monkeypatch):
 
 
 def test_questions_rendered_with_fake_completer(fixture_repo, tmp_path, monkeypatch):
-    monkeypatch.setattr("acquirescope.modules.security.shutil.which", lambda _: None)
+    monkeypatch.setattr("git_due_diligence.modules.security.shutil.which", lambda _: None)
     monkeypatch.setattr(cli, "_llm_unavailable_reason", lambda: None)
 
     def fake_complete(prompt: str) -> str:
@@ -266,7 +266,7 @@ def test_questions_rendered_with_fake_completer(fixture_repo, tmp_path, monkeypa
 
 
 def test_questions_failure_degrades_to_plain_report(fixture_repo, tmp_path, monkeypatch):
-    monkeypatch.setattr("acquirescope.modules.security.shutil.which", lambda _: None)
+    monkeypatch.setattr("git_due_diligence.modules.security.shutil.which", lambda _: None)
     monkeypatch.setattr(cli, "_llm_unavailable_reason", lambda: None)
 
     def boom(prompt: str) -> str:

@@ -2,9 +2,9 @@ import os
 import subprocess
 from pathlib import Path
 
-from acquirescope.ingest import RepoIngest
-from acquirescope.models import Severity
-from acquirescope.modules import bus_factor
+from git_due_diligence.ingest import RepoIngest
+from git_due_diligence.models import Severity
+from git_due_diligence.modules import bus_factor
 
 
 def _commit(repo: Path, path: str, content: str, author: str, date: str) -> None:

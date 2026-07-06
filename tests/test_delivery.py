@@ -1,9 +1,9 @@
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from acquirescope.ingest import Commit, RepoIngest
-from acquirescope.models import Severity
-from acquirescope.modules import delivery
+from git_due_diligence.ingest import Commit, RepoIngest
+from git_due_diligence.models import Severity
+from git_due_diligence.modules import delivery
 
 
 class _StubIngest:

@@ -1,6 +1,6 @@
-from acquirescope.dispositions import Disposition
-from acquirescope.models import Evidence, Finding, ModuleResult, Severity
-from acquirescope.report import render_markdown
+from git_due_diligence.dispositions import Disposition
+from git_due_diligence.models import Evidence, Finding, ModuleResult, Severity
+from git_due_diligence.report import render_markdown
 
 
 def _sample_results():
@@ -64,7 +64,7 @@ def test_no_appendix_when_nothing_dismissed():
 
 def test_question_rendered_for_matching_finding():
     finding = _sample_results()[0].findings[0]
-    from acquirescope.dispositions import compute_finding_id
+    from git_due_diligence.dispositions import compute_finding_id
     fid = compute_finding_id(finding)
     md = render_markdown("target-repo", _sample_results(), questions={fid: "Who owns this dependency risk?"})
     assert "**Question for management:** Who owns this dependency risk?" in md
@@ -76,7 +76,7 @@ def test_no_question_line_when_no_match():
 
 
 def test_dismissed_finding_never_shows_question():
-    from acquirescope.dispositions import Disposition, compute_finding_id
+    from git_due_diligence.dispositions import Disposition, compute_finding_id
     finding = _sample_results()[0].findings[0]
     fid = compute_finding_id(finding)
     disposition = Disposition(status="dismissed", severity_override=None, note="not real", finding_title=finding.title)

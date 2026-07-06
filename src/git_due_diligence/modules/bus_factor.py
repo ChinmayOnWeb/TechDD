@@ -3,8 +3,8 @@ from __future__ import annotations
 import re
 from collections import Counter, defaultdict
 
-from acquirescope.ingest import RepoIngest
-from acquirescope.models import Evidence, Finding, ModuleResult, Severity
+from git_due_diligence.ingest import RepoIngest
+from git_due_diligence.models import Evidence, Finding, ModuleResult, Severity
 
 MIN_DIR_COMMITS = 5       # directories with fewer commits are too small to judge
 DEPARTED_SHARE = 0.20     # author owns >= 20% of all commits

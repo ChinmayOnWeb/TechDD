@@ -1,5 +1,5 @@
-from acquirescope.bridge.assumptions import Assumptions, CompCompany
-from acquirescope.bridge.valuation import (
+from git_due_diligence.bridge.assumptions import Assumptions, CompCompany
+from git_due_diligence.bridge.valuation import (
     blended_pre_dd_ev_mid,
     comps_valuation,
     dcf_scenarios,

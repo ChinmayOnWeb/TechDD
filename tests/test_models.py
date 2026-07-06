@@ -1,4 +1,4 @@
-from acquirescope.models import Evidence, Finding, ModuleResult, Severity
+from git_due_diligence.models import Evidence, Finding, ModuleResult, Severity
 
 
 def test_finding_carries_evidence():

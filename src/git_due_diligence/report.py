@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from acquirescope.dispositions import Disposition, compute_finding_id
-from acquirescope.models import Finding, ModuleResult
+from git_due_diligence.dispositions import Disposition, compute_finding_id
+from git_due_diligence.models import Finding, ModuleResult
 
 DISCLAIMER = (
     "*This report is an automated, educational analysis of publicly available "

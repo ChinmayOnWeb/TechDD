@@ -1,7 +1,7 @@
 import subprocess
 from pathlib import Path
 
-from acquirescope.ingest import RepoIngest
+from git_due_diligence.ingest import RepoIngest
 
 
 def test_commits_parsed_with_authors_and_changes(fixture_repo):

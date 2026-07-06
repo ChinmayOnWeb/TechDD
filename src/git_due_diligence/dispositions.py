@@ -5,7 +5,7 @@ import json
 from dataclasses import dataclass, replace
 from pathlib import Path
 
-from acquirescope.models import Finding, ModuleResult, Severity
+from git_due_diligence.models import Finding, ModuleResult, Severity
 
 _VALID_STATUSES = {"pending", "confirmed", "downgraded", "dismissed"}
 

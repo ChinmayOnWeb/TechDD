@@ -5,8 +5,8 @@ from collections import Counter
 
 import lizard
 
-from acquirescope.ingest import RepoIngest
-from acquirescope.models import Evidence, Finding, ModuleResult, Severity
+from git_due_diligence.ingest import RepoIngest
+from git_due_diligence.models import Evidence, Finding, ModuleResult, Severity
 
 MODULE = "hotspots"
 MIN_AVG_CCN = 5.0

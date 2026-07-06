@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from acquirescope.bridge.assumptions import Assumptions
-from acquirescope.models import ModuleResult, Severity
+from git_due_diligence.bridge.assumptions import Assumptions
+from git_due_diligence.models import ModuleResult, Severity
 
 BAND = 0.5  # +/-50% band where the source module provides no band of its own
 

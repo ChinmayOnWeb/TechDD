@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from acquirescope.ingest import RepoIngest
-from acquirescope.models import Evidence, Finding, ModuleResult, Severity
+from git_due_diligence.ingest import RepoIngest
+from git_due_diligence.models import Evidence, Finding, ModuleResult, Severity
 
 MODULE = "delivery"
 STALE_RELEASE_DAYS = 180

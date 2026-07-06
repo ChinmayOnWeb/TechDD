@@ -2,9 +2,9 @@ import json
 import subprocess
 from pathlib import Path
 
-from acquirescope.ingest import RepoIngest
-from acquirescope.models import Severity
-from acquirescope.modules import licenses
+from git_due_diligence.ingest import RepoIngest
+from git_due_diligence.models import Severity
+from git_due_diligence.modules import licenses
 
 
 def test_classifies_own_mit_license(fixture_repo):

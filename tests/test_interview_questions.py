@@ -2,12 +2,12 @@ import json
 
 import pytest
 
-from acquirescope.interview_questions import (
+from git_due_diligence.interview_questions import (
     build_questions_prompt,
     generate_questions,
     parse_questions_response,
 )
-from acquirescope.models import Finding, ModuleResult, Severity
+from git_due_diligence.models import Finding, ModuleResult, Severity
 
 
 def _results() -> list[ModuleResult]:

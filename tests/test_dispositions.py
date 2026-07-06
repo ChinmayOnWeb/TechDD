@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from acquirescope.dispositions import (
+from git_due_diligence.dispositions import (
     Disposition,
     apply_dispositions,
     compute_finding_id,
@@ -10,7 +10,7 @@ from acquirescope.dispositions import (
     merge_dispositions,
     save_dispositions,
 )
-from acquirescope.models import Evidence, Finding, ModuleResult, Severity
+from git_due_diligence.models import Evidence, Finding, ModuleResult, Severity
 
 
 def _finding(title="Some finding", path="a/b.py", detail="x") -> Finding:

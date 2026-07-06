@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from acquirescope.bridge.assumptions import load_assumptions
+from git_due_diligence.bridge.assumptions import load_assumptions
 
 EXAMPLE = Path(__file__).parent.parent / "examples" / "assumptions.example.toml"
 

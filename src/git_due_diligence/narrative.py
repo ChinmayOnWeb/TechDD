@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 from typing import Callable
 
-from acquirescope.models import ModuleResult
+from git_due_diligence.models import ModuleResult
 
 _CITATION = re.compile(r"\[E(\d+)\]")
 

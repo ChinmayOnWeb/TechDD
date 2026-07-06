@@ -1,6 +1,6 @@
-from acquirescope.bridge.adjustments import price_adjustments
-from acquirescope.bridge.assumptions import Assumptions, CompCompany
-from acquirescope.models import Evidence, Finding, ModuleResult, Severity
+from git_due_diligence.bridge.adjustments import price_adjustments
+from git_due_diligence.bridge.assumptions import Assumptions, CompCompany
+from git_due_diligence.models import Evidence, Finding, ModuleResult, Severity
 
 
 def _assumptions() -> Assumptions:

@@ -3,8 +3,8 @@ from __future__ import annotations
 import json
 from typing import Callable
 
-from acquirescope.dispositions import compute_finding_id
-from acquirescope.models import ModuleResult, Severity
+from git_due_diligence.dispositions import compute_finding_id
+from git_due_diligence.models import ModuleResult, Severity
 
 _INSTRUCTIONS = (
     "You are preparing interview questions for a technical due-diligence engagement. "

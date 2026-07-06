@@ -1,5 +1,5 @@
-from acquirescope.models import Finding, ModuleResult, Severity
-from acquirescope.narrative import build_prompt, generate_narrative, verify_citations
+from git_due_diligence.models import Finding, ModuleResult, Severity
+from git_due_diligence.narrative import build_prompt, generate_narrative, verify_citations
 
 
 def _results() -> list[ModuleResult]:

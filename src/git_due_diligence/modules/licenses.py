@@ -4,8 +4,8 @@ import json
 import re
 import tomllib
 
-from acquirescope.ingest import RepoIngest
-from acquirescope.models import Evidence, Finding, ModuleResult, Severity
+from git_due_diligence.ingest import RepoIngest
+from git_due_diligence.models import Evidence, Finding, ModuleResult, Severity
 
 MODULE = "licenses"
 

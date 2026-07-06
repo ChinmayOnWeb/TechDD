@@ -2,16 +2,16 @@ from pathlib import Path
 
 from openpyxl import load_workbook
 
-from acquirescope.bridge.adjustments import Adjustment
-from acquirescope.bridge.assumptions import Assumptions, CompCompany
-from acquirescope.bridge.valuation import (
+from git_due_diligence.bridge.adjustments import Adjustment
+from git_due_diligence.bridge.assumptions import Assumptions, CompCompany
+from git_due_diligence.bridge.valuation import (
     blended_pre_dd_ev_mid,
     comps_valuation,
     dcf_scenarios,
     dcf_valuation,
     sensitivity_grid,
 )
-from acquirescope.excel import write_model
+from git_due_diligence.excel import write_model
 
 
 def _assumptions() -> Assumptions:

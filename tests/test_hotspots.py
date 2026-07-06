@@ -1,8 +1,8 @@
 from pathlib import Path
 
-from acquirescope.ingest import RepoIngest
-from acquirescope.models import Severity
-from acquirescope.modules import hotspots
+from git_due_diligence.ingest import RepoIngest
+from git_due_diligence.models import Severity
+from git_due_diligence.modules import hotspots
 
 
 def test_flags_high_churn_complex_file(fixture_repo):

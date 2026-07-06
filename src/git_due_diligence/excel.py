@@ -6,10 +6,10 @@ from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.worksheet.worksheet import Worksheet
 
-from acquirescope.bridge.adjustments import Adjustment
-from acquirescope.bridge.assumptions import Assumptions
-from acquirescope.bridge.valuation import DcfScenario, SensitivityGrid, Valuation
-from acquirescope.report import DISCLAIMER
+from git_due_diligence.bridge.adjustments import Adjustment
+from git_due_diligence.bridge.assumptions import Assumptions
+from git_due_diligence.bridge.valuation import DcfScenario, SensitivityGrid, Valuation
+from git_due_diligence.report import DISCLAIMER
 
 _FONT_NAME = "Calibri"
 _TITLE_FONT = Font(name=_FONT_NAME, size=14, bold=True, color="1F3864")

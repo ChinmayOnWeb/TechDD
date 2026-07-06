@@ -6,29 +6,29 @@ from typing import Callable
 
 import typer
 
-from acquirescope.bridge.adjustments import price_adjustments
-from acquirescope.bridge.assumptions import load_assumptions
-from acquirescope.bridge.valuation import (
+from git_due_diligence.bridge.adjustments import price_adjustments
+from git_due_diligence.bridge.assumptions import load_assumptions
+from git_due_diligence.bridge.valuation import (
     blended_pre_dd_ev_mid,
     comps_valuation,
     dcf_scenarios,
     dcf_valuation,
     sensitivity_grid,
 )
-from acquirescope.dispositions import (
+from git_due_diligence.dispositions import (
     Disposition,
     apply_dispositions,
     load_dispositions,
     merge_dispositions,
     save_dispositions,
 )
-from acquirescope.excel import write_model
-from acquirescope.ingest import RepoIngest
-from acquirescope.interview_questions import generate_questions
-from acquirescope.models import Finding, ModuleResult
-from acquirescope.modules import bus_factor, delivery, hotspots, licenses, security
-from acquirescope.narrative import generate_narrative
-from acquirescope.report import render_markdown
+from git_due_diligence.excel import write_model
+from git_due_diligence.ingest import RepoIngest
+from git_due_diligence.interview_questions import generate_questions
+from git_due_diligence.models import Finding, ModuleResult
+from git_due_diligence.modules import bus_factor, delivery, hotspots, licenses, security
+from git_due_diligence.narrative import generate_narrative
+from git_due_diligence.report import render_markdown
 
 app = typer.Typer(add_completion=False)
 
@@ -55,7 +55,7 @@ def _llm_unavailable_reason() -> str | None:
     try:
         import anthropic  # noqa: F401
     except ImportError:
-        return "this feature requires the anthropic package: pip install acquirescope[llm]"
+        return "this feature requires the anthropic package: pip install git-due-diligence[llm]"
     if not (os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_AUTH_TOKEN")):
         return "this feature requires ANTHROPIC_API_KEY (or ANTHROPIC_AUTH_TOKEN) in the environment"
     return None
@@ -88,8 +88,8 @@ def _anthropic_complete(prompt: str) -> str:
 def analyze(
     repo_path: Path = typer.Argument(..., exists=True, file_okay=False, help="Path to a local git repository"),
     output: Path = typer.Option(Path("dd-report.md"), "--output", "-o", help="Report output path"),
-    narrative: bool = typer.Option(False, "--narrative", help="Prepend an LLM-generated, citation-verified executive narrative (requires acquirescope[llm] and an Anthropic API key)"),
-    questions: bool = typer.Option(False, "--questions", help="Generate an LLM-written 'question for management' per finding (requires acquirescope[llm] and an Anthropic API key)"),
+    narrative: bool = typer.Option(False, "--narrative", help="Prepend an LLM-generated, citation-verified executive narrative (requires git-due-diligence[llm] and an Anthropic API key)"),
+    questions: bool = typer.Option(False, "--questions", help="Generate an LLM-written 'question for management' per finding (requires git-due-diligence[llm] and an Anthropic API key)"),
     dispositions: Path = typer.Option(None, "--dispositions", help="Analyst disposition file (JSON) -- confirm/downgrade/dismiss findings; bootstrapped on first use"),
 ) -> None:
     """Run all due-diligence modules against REPO_PATH and write a markdown report."""

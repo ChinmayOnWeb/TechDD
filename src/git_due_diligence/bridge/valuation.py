@@ -3,7 +3,7 @@ from __future__ import annotations
 import statistics
 from dataclasses import dataclass
 
-from acquirescope.bridge.assumptions import Assumptions
+from git_due_diligence.bridge.assumptions import Assumptions
 
 
 @dataclass(frozen=True)
