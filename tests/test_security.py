@@ -130,6 +130,27 @@ def test_markdown_file_always_downgraded(tmp_path, monkeypatch):
     assert result.metrics["low_confidence_secret_count"] == 1
 
 
+def test_vue_bound_attribute_downgraded_to_low_confidence(tmp_path, monkeypatch):
+    """Vue/Angular-style bound attributes (`:token="expression"`) put the
+    keyword right before an `=` and a quoted value, matching the hardcoded-
+    credential regex even though the quoted 'value' is a JS expression
+    reference, not a literal secret. Real GitLab findings: `:token=
+    "selectedDuplicateToken"` in personal_access_tokens/components/app.vue
+    and `:initial-secret-token="initialSecretToken"` in
+    webhooks/components/webhook_form_app.vue -- neither is a real secret."""
+    _no_osv(monkeypatch)
+    repo = _tiny_repo(
+        tmp_path, "app/assets/javascripts/app.vue",
+        '      :initial-secret-token="initialSecretToken"\n',
+    )
+    result = security.analyze(RepoIngest(repo))
+    matches = [f for f in result.findings if "Hardcoded credential" in f.title]
+    assert len(matches) == 1
+    assert matches[0].severity == Severity.LOW
+    assert result.metrics["secret_count"] == 0
+    assert result.metrics["low_confidence_secret_count"] == 1
+
+
 def test_secret_removed_from_head_still_flagged(fixture_repo, monkeypatch):
     _no_osv(monkeypatch)
     assert "AKIA" not in (Path(fixture_repo) / "config" / "settings.py").read_text(encoding="utf-8")
