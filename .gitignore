@@ -12,3 +12,7 @@ __pycache__/
 
 # Env / secrets
 .env
+
+# DD reports on real target companies -- may reference third-party security
+# findings (e.g. secrets in their git history); not for public disclosure.
+reports/
