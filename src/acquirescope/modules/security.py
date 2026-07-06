@@ -56,6 +56,21 @@ def _looks_like_test_path(path: str | None) -> bool:
     return ".test." in filename or ".spec." in filename
 
 
+_TEMPLATE_BINDING_ATTR_PREFIX = re.compile(r":[\w-]*$")
+
+
+def _is_template_binding_mention(line: str, match: re.Match) -> bool:
+    """Vue/Angular-style bound attributes (`:token="expr"`,
+    `:initial-secret-token="initialSecretToken"`) place the credential
+    keyword at the tail of a kebab-case attribute name introduced by a bare
+    colon, with a JS/TS expression -- not a literal secret -- inside the
+    quotes that follow the `=`. This matches the hardcoded-credential regex
+    (keyword + `=` + 16+ alnum chars in quotes) despite containing no actual
+    secret material. Walk back from the match to the start of the kebab-case
+    identifier and check whether a bare `:` immediately precedes it."""
+    return bool(_TEMPLATE_BINDING_ATTR_PREFIX.search(line[:match.start()]))
+
+
 _MAX_PRIVATE_KEY_PROSE_CHARS = 20
 
 
@@ -106,6 +121,10 @@ def _secrets_in_history(ingest: RepoIngest) -> tuple[list[Finding], int, int]:
                         label == "Private key block"
                         and _is_private_key_prose_mention(line, match)
                     )
+                    template_binding = (
+                        label == "Hardcoded credential assignment"
+                        and _is_template_binding_mention(line, match)
+                    )
                     if prose_mention:
                         low_confidence += 1
                         title = f"Private key format mentioned in text (likely not a real key): {label}"
@@ -114,6 +133,17 @@ def _secrets_in_history(ingest: RepoIngest) -> tuple[list[Finding], int, int]:
                             "same line, consistent with an error message or comment describing the "
                             "expected format rather than an embedded key. Not excluded automatically "
                             "-- verify manually before dismissing."
+                        )
+                        severity = Severity.LOW
+                    elif template_binding:
+                        low_confidence += 1
+                        title = f"Template attribute binding, likely not a real secret: {label}"
+                        summary = (
+                            "The credential keyword is immediately preceded by a colon and followed "
+                            "by a quoted value, consistent with a Vue/Angular-style bound attribute "
+                            "(e.g. :token=\"expression\") where the quotes wrap a JS/TS expression "
+                            "reference rather than a literal secret. Not excluded automatically -- "
+                            "verify manually before dismissing."
                         )
                         severity = Severity.LOW
                     elif _looks_like_test_path(current_path):

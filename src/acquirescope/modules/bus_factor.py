@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from collections import Counter, defaultdict
 
 from acquirescope.ingest import RepoIngest
@@ -9,6 +10,19 @@ MIN_DIR_COMMITS = 5       # directories with fewer commits are too small to judg
 DEPARTED_SHARE = 0.20     # author owns >= 20% of all commits
 DEPARTED_DAYS = 180       # and has been inactive this long vs latest commit
 MODULE = "bus_factor"
+
+# CI/automation accounts (gitlab-bot@gitlab.com, dependabot[bot]@..., etc.)
+# commit at high volume but represent no human knowledge to lose -- a directory
+# or "inactive contributor" signal dominated by one of these is noise, not a
+# bus-factor risk. Real GitLab analysis showed 35/37 "single point of failure"
+# findings were entirely gitlab-bot@gitlab.com, burying every human-owned one.
+_BOT_MARKERS = frozenset({"bot", "bots"})
+
+
+def _is_bot_author(email: str) -> bool:
+    local_part = email.split("@", 1)[0].lower()
+    segments = re.split(r"[^a-z0-9]+", local_part)
+    return any(seg in _BOT_MARKERS for seg in segments if seg)
 
 
 def _bus_factor(author_counts: Counter) -> int:
@@ -33,8 +47,14 @@ def _gini(values: list[int]) -> float:
 
 
 def analyze(ingest: RepoIngest) -> ModuleResult:
-    commits = ingest.commits()
+    commits = [c for c in ingest.commits() if not _is_bot_author(c.author_email)]
     findings: list[Finding] = []
+
+    if not commits:
+        return ModuleResult(
+            module=MODULE, status="ok", findings=findings,
+            metrics={"contributor_gini": 0.0, "top_author_share": 0.0},
+        )
 
     # Per top-level directory: which authors touch it, how often.
     dir_authors: dict[str, Counter] = defaultdict(Counter)
