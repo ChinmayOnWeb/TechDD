@@ -12,6 +12,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = ["pytest>=8.0"]
 llm = ["anthropic>=0.40"]
+panel = ["pandas>=2.0", "statsmodels>=0.14", "requests>=2.31"]
 
 [project.scripts]
 gitdd = "git_due_diligence.cli:app"

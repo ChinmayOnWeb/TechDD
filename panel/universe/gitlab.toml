@@ -1,0 +1,8 @@
+name = "GitLab Inc."
+slug = "gitlab"
+ticker = "GTLB"
+cik = "0001653482"
+repos = ["https://github.com/gitlabhq/gitlabhq.git"]
+fiscal_year_end_month = 1
+listed_from = 2021-10-14
+notes = "IPO 2021-10-14; CE/EE monorepo merge 2019 predates listing."
