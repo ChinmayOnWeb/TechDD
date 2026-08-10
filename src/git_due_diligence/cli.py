@@ -28,9 +28,11 @@ from git_due_diligence.interview_questions import generate_questions
 from git_due_diligence.models import Finding, ModuleResult
 from git_due_diligence.modules import bus_factor, delivery, hotspots, licenses, security
 from git_due_diligence.narrative import generate_narrative
+from git_due_diligence.panel.cli import panel_app
 from git_due_diligence.report import render_markdown
 
 app = typer.Typer(add_completion=False)
+app.add_typer(panel_app, name="panel")
 
 MODULES: list[tuple[str, Callable[[RepoIngest], ModuleResult]]] = [
     ("bus_factor", bus_factor.analyze),

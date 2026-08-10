@@ -110,6 +110,29 @@ because the peer set didn't match GitLab's actual growth stage — a finding abo
 correctly, not just a demo. (The generated report/model artifacts themselves aren't included in
 this repo, since they reference specific findings against a third party's real commit history.)
 
+## Research: is repository health priced?
+
+The `gitdd panel` command group builds a firm-quarter research dataset for public companies
+whose flagship product is developed in an open repository, and runs the panel regressions
+behind the study *"Is Repository Health Priced?"* (design doc:
+`docs/superpowers/specs/2026-07-06-repo-health-pricing-panel-study-design.md`).
+
+```bash
+pip install -e ".[panel]"
+
+# one local clone per firm, directory name = firm slug from panel/universe/*.toml
+gitdd panel build --universe panel/universe --clones /path/to/clones -o panel.csv
+gitdd panel regress panel.csv -o panel_results/
+```
+
+`build` reconstructs each repo's health metrics as they stood at every fiscal quarter-end
+(trailing one-year window, bot authors excluded), fetches quarterly fundamentals from SEC
+EDGAR XBRL and quarter-end prices from Stooq (both cached to `panel_cache/`, so rebuilds
+are offline and reproducible), and joins everything into one tidy CSV. `regress` estimates
+whether repo health explains EV/Revenue multiples beyond growth/margin/scale (firm and
+quarter fixed effects, firm-clustered standard errors) and whether it forecasts revenue
+growth one to four quarters ahead.
+
 ## Development
 
 ```bash
