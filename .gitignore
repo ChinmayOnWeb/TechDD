@@ -16,3 +16,9 @@ __pycache__/
 # DD reports on real target companies -- may reference third-party security
 # findings (e.g. secrets in their git history); not for public disclosure.
 reports/
+
+# Panel-study per-run artifacts (rebuildable from cache; published dataset
+# committed deliberately once the universe is final).
+panel_cache/
+panel.csv
+panel_results/
