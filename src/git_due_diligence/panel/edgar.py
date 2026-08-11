@@ -17,6 +17,15 @@ _REVENUE_TAGS = [
 _OPERATING_INCOME_TAGS = ["OperatingIncomeLoss"]
 _CASH_TAGS = ["CashAndCashEquivalentsAtCarryingValue"]
 _DEBT_TAGS = ["LongTermDebt", "LongTermDebtNoncurrent", "ConvertibleDebtNoncurrent"]
+# Some issuers omit the dei.EntityCommonStockSharesOutstanding cover-fact instant
+# entirely and only report weighted-average share counts on the income statement.
+# We fall back to the basic weighted-average shares (duration fact, keyed by
+# period end) when no instant is available.
+_SHARES_INSTANT_TAGS = ["EntityCommonStockSharesOutstanding", "CommonStockSharesOutstanding"]
+_SHARES_DURATION_FALLBACK_TAGS = [
+    "WeightedAverageNumberOfSharesOutstandingBasic",
+    "WeightedAverageNumberOfDilutedSharesOutstanding",
+]
 _QUARTER_DAYS = (80, 100)
 _ANNUAL_DAYS = (350, 380)
 _INSTANT_TOLERANCE_DAYS = 70
@@ -90,6 +99,24 @@ def _instant_series(section: dict, tags: list[str], unit: str) -> dict[date, flo
     return {}
 
 
+def _shares_series(gaap: dict, dei: dict) -> dict[date, float]:
+    """Prefer the DEI instant tag; fall back to a duration-tag (weighted-average
+    share count from 10-Q/10-K) keyed by period end when the instant is absent."""
+    instant = _instant_series(dei, _SHARES_INSTANT_TAGS, "shares")
+    if instant:
+        return instant
+    for tag in _SHARES_DURATION_FALLBACK_TAGS:
+        entries = gaap.get(tag, {}).get("units", {}).get("shares", [])
+        series: dict[date, float] = {}
+        for entry in entries:
+            if entry.get("form") not in ("10-Q", "10-K"):
+                continue
+            series[date.fromisoformat(entry["end"])] = float(entry["val"])
+        if series:
+            return series
+    return {}
+
+
 def _nearest(series: dict[date, float], target: date) -> float | None:
     if not series:
         return None
@@ -115,7 +142,7 @@ def fetch_fundamentals(cik: str, cache_dir: Path,
     )
     cash = _instant_series(gaap, _CASH_TAGS, "USD")
     debt = _instant_series(gaap, _DEBT_TAGS, "USD")
-    shares = _instant_series(dei, ["EntityCommonStockSharesOutstanding"], "shares")
+    shares = _shares_series(gaap, dei)
 
     return [
         QuarterFundamentals(

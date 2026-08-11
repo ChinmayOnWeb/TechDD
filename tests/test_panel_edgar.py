@@ -68,6 +68,27 @@ def test_instants_matched_within_tolerance(tmp_path):
     assert q4.operating_income is None
 
 
+def test_shares_falls_back_to_weighted_average_when_dei_missing(tmp_path):
+    facts = {"cik": 2, "facts": {
+        "dei": {},
+        "us-gaap": {
+            "Revenues": {"units": {"USD": [
+                _entry("2024-02-01", "2024-04-30", 100.0),
+                _entry("2024-05-01", "2024-07-31", 110.0),
+            ]}},
+            "WeightedAverageNumberOfSharesOutstandingBasic": {"units": {"shares": [
+                {"start": "2024-02-01", "end": "2024-04-30", "val": 50_000_000, "form": "10-Q"},
+                {"start": "2024-05-01", "end": "2024-07-31", "val": 51_000_000, "form": "10-Q"},
+            ]}},
+        },
+    }}
+    import json as _json
+    rows = fetch_fundamentals("0000000002", tmp_path,
+                              fetch=lambda url: _json.dumps(facts))
+    assert rows[0].shares_outstanding == 50_000_000.0
+    assert rows[1].shares_outstanding == 51_000_000.0
+
+
 def test_companyfacts_cached_after_first_fetch(tmp_path):
     calls: list[str] = []
     fetch = _fake_fetch(calls)
