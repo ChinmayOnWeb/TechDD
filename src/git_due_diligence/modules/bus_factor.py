@@ -18,11 +18,20 @@ MODULE = "bus_factor"
 # findings were entirely gitlab-bot@gitlab.com, burying every human-owned one.
 _BOT_MARKERS = frozenset({"bot", "bots"})
 
+# Release/service-automation accounts that don't carry a "bot" token but are
+# unambiguously machine identities. Matched as substrings of the full local
+# part (so "delivery-team+release-tools" is caught). Kept deliberately narrow
+# to avoid excluding humans -- e.g. "noreply" is NOT here, since real
+# contributors commit under github-noreply-style addresses.
+_AUTOMATION_MARKERS = ("release-tools", "release-bot", "service-account", "automation")
+
 
 def _is_bot_author(email: str) -> bool:
     local_part = email.split("@", 1)[0].lower()
     segments = re.split(r"[^a-z0-9]+", local_part)
-    return any(seg in _BOT_MARKERS for seg in segments if seg)
+    if any(seg in _BOT_MARKERS for seg in segments if seg):
+        return True
+    return any(marker in local_part for marker in _AUTOMATION_MARKERS)
 
 
 def _bus_factor(author_counts: Counter) -> int:

@@ -76,6 +76,19 @@ def test_bot_account_variants_recognized(tmp_path):
     assert not any("deps" in f.title for f in result.findings)
 
 
+def test_is_bot_author_recognizes_automation_accounts():
+    # "bot"/"bots" segment accounts
+    assert bus_factor._is_bot_author("gitlab-bot@gitlab.com")
+    assert bus_factor._is_bot_author("49699333+dependabot[bot]@users.noreply.github.com")
+    # release/service automation without a "bot" token
+    assert bus_factor._is_bot_author("delivery-team+release-tools@gitlab.com")
+    assert bus_factor._is_bot_author("service-account@example.com")
+    # real humans must not be filtered -- including noreply-style addresses
+    assert not bus_factor._is_bot_author("noreply@pedro.pombei.ro")
+    assert not bus_factor._is_bot_author("heinrich@gitlab.com")
+    assert not bus_factor._is_bot_author("robert@example.com")  # substring "bot" not a segment
+
+
 def test_bot_account_excluded_from_inactive_contributor_check(tmp_path):
     repo = _tiny_repo(tmp_path)
     for i in range(6):
