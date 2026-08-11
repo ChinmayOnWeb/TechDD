@@ -75,7 +75,11 @@ def regress(
     from git_due_diligence.panel.regress import run_regressions
 
     panel = pd.read_csv(panel_csv)
-    results = run_regressions(panel, output_dir)
+    try:
+        results = run_regressions(panel, output_dir)
+    except ValueError as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(code=1)
     for name, res in results.items():
         coefficient = res.params.get("repo_health_index_z")
         typer.echo(f"{name}: repo_health_index_z = {coefficient:+.4f}")

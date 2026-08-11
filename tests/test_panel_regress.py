@@ -48,3 +48,10 @@ def test_rows_with_missing_values_dropped_not_fatal(tmp_path):
     panel.loc[panel.index[:5], "growth_yoy"] = np.nan
     results = run_regressions(panel, tmp_path)
     assert "h1" in results
+
+
+def test_single_firm_panel_refused_cleanly(tmp_path):
+    import pytest
+    panel = _synthetic_panel(n_firms=1)
+    with pytest.raises(ValueError, match="firm fixed effects"):
+        run_regressions(panel, tmp_path)

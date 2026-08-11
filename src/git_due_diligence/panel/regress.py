@@ -5,12 +5,20 @@ from pathlib import Path
 _CONTROLS = "growth_yoy + op_margin_ltm + log_rev"
 _FIXED_EFFECTS = "C(firm) + C(quarter_end)"
 _MIN_ROWS = 30
+_MIN_FIRMS = 2   # firm-clustered SE degenerate with a single group
 _H2_HORIZONS = range(1, 5)
 
 
 def run_regressions(panel, output_dir: Path,
                     index_col: str = "repo_health_index_z") -> dict:
     import statsmodels.formula.api as smf
+
+    n_firms = panel["firm"].nunique() if "firm" in panel.columns else 0
+    if n_firms < _MIN_FIRMS:
+        raise ValueError(
+            f"panel has {n_firms} firm(s); firm fixed effects with firm-clustered "
+            f"standard errors require at least {_MIN_FIRMS}. Add more firms to "
+            f"panel/universe/ and rebuild.")
 
     output_dir.mkdir(parents=True, exist_ok=True)
     results: dict = {}
