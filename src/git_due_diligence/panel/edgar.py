@@ -99,6 +99,24 @@ def _instant_series(section: dict, tags: list[str], unit: str) -> dict[date, flo
     return {}
 
 
+def _merged_instant_series(section: dict, tags: list[str], unit: str) -> dict[date, float]:
+    """Union of several tags' instant series, filled in priority order: an
+    earlier tag's value wins for dates it covers, later tags fill remaining
+    dates. Unlike _instant_series (first non-empty tag wins outright), this
+    stops a sparse high-priority roll-up (e.g. a single stale LongTermDebt
+    point) from shadowing a richer component series (ConvertibleDebtNoncurrent)
+    on the dates the roll-up never reports."""
+    merged: dict[date, float] = {}
+    for tag in tags:
+        entries = section.get(tag, {}).get("units", {}).get(unit, [])
+        for e in entries:
+            if "start" in e:
+                continue
+            when = date.fromisoformat(e["end"])
+            merged.setdefault(when, float(e["val"]))
+    return merged
+
+
 def _shares_series(gaap: dict, dei: dict) -> dict[date, float]:
     """Prefer the DEI instant tag; fall back to a duration-tag (weighted-average
     share count from 10-Q/10-K) keyed by period end when the instant is absent."""
@@ -141,7 +159,7 @@ def fetch_fundamentals(cik: str, cache_dir: Path,
         _duration_series(gaap, _OPERATING_INCOME_TAGS, _ANNUAL_DAYS),
     )
     cash = _instant_series(gaap, _CASH_TAGS, "USD")
-    debt = _instant_series(gaap, _DEBT_TAGS, "USD")
+    debt = _merged_instant_series(gaap, _DEBT_TAGS, "USD")
     shares = _shares_series(gaap, dei)
 
     return [

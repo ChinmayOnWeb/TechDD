@@ -89,6 +89,30 @@ def test_shares_falls_back_to_weighted_average_when_dei_missing(tmp_path):
     assert rows[1].shares_outstanding == 51_000_000.0
 
 
+def test_debt_merges_across_tags_priority_fill(tmp_path):
+    # A sparse, stale LongTermDebt roll-up must not shadow a richer
+    # ConvertibleDebtNoncurrent series on the dates it never reports.
+    facts = {"cik": 3, "facts": {"dei": {}, "us-gaap": {
+        "RevenueFromContractWithCustomerExcludingAssessedTax": {"units": {"USD": [
+            _entry("2024-02-01", "2024-04-30", 100.0),
+            _entry("2024-05-01", "2024-07-31", 110.0),
+        ]}},
+        "EntityCommonStockSharesOutstanding": {"units": {"shares": []}},
+        "LongTermDebt": {"units": {"USD": [
+            {"end": "2019-01-31", "val": 500.0},           # single stale point
+        ]}},
+        "ConvertibleDebtNoncurrent": {"units": {"USD": [
+            {"end": "2024-04-30", "val": 1000.0},
+            {"end": "2024-07-31", "val": 0.0},             # redeemed
+        ]}},
+    }}}
+    import json as _json
+    rows = fetch_fundamentals("0000000003", tmp_path, fetch=lambda url: _json.dumps(facts))
+    by_end = {r.quarter_end: r for r in rows}
+    assert by_end[date(2024, 4, 30)].debt == 1000.0        # from convertible series
+    assert by_end[date(2024, 7, 31)].debt == 0.0           # redeemed, not None
+
+
 def test_companyfacts_cached_after_first_fetch(tmp_path):
     calls: list[str] = []
     fetch = _fake_fetch(calls)
