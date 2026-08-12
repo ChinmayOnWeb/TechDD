@@ -32,6 +32,22 @@ The dependence on a third-party mirror package is a limitation: the list is only
 as complete and current as that package's last publish. The frame metadata pins
 the mirror version used (`2.0.2530`).
 
+### Drawn frames
+
+Both drawn with the same seed and sample size, so any difference in results is
+attributable to the ecosystems rather than to sampling design.
+
+| | index size | sampled | unique repos | resolution | no release since 2023 |
+|---|---|---|---|---|---|
+| PyPI (primary) | 869,695 | 8,000 | 4,850 | 61% | **38%** |
+| npm (robustness) | 4,333,020 | 8,000 | 4,125 | 52% | **47%** |
+
+npm's lower resolution rate reflects its looser `repository` metadata
+conventions. Its higher staleness rate — 47% against PyPI's 38% — is a genuine
+ecosystem difference and is itself a reason to keep npm as a robustness check:
+if the health–mortality relationship differs between a deader and a livelier
+ecosystem, that is a finding rather than a nuisance.
+
 ### crates.io — dead end
 
 `crates.io/api/v1/...` returns 403 from this environment. `index.crates.io` *is*
