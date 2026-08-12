@@ -22,3 +22,8 @@ reports/
 panel_cache/
 panel.csv
 panel_results/
+
+# Part C cohort working data (regenerable from the frozen frame + seed)
+cohort_cache/
+cohort_work/
+cohort_results/
