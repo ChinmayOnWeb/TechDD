@@ -36,7 +36,7 @@ def build(
     _require_panel_extra()
     from git_due_diligence.panel.assemble import build_panel
     from git_due_diligence.panel.edgar import fetch_fundamentals
-    from git_due_diligence.panel.history import quarterly_metrics
+    from git_due_diligence.panel.metrics_cache import load_or_compute_metrics
     from git_due_diligence.panel.prices import quarter_end_prices
     from git_due_diligence.panel.universe import fiscal_quarter_ends, load_universe
 
@@ -53,7 +53,8 @@ def build(
         quarter_ends = fiscal_quarter_ends(
             firm.fiscal_year_end_month, firm.listed_from, firm.listed_to or date.today())
         typer.echo(f"{firm.slug}: {len(quarter_ends)} fiscal quarters")
-        metrics_by_slug[firm.slug] = quarterly_metrics(clone, quarter_ends)
+        metrics_by_slug[firm.slug] = load_or_compute_metrics(
+            firm.slug, clone, quarter_ends, cache)
         fundamentals_by_slug[firm.slug] = fetch_fundamentals(firm.cik, cache)
         prices_by_slug[firm.slug] = quarter_end_prices(firm.ticker, quarter_ends, cache)
         kept.append(firm)
