@@ -78,6 +78,13 @@ def test_release_cadence_excluded_from_health_index():
     assert "active_contributors" in names
 
 
+def test_count_components_log_transformed():
+    from git_due_diligence.panel.assemble import _LOG_COMPONENTS
+    assert "active_contributors" in _LOG_COMPONENTS
+    assert "bus_factor_50" in _LOG_COMPONENTS
+    assert "top_author_share" not in _LOG_COMPONENTS   # already a ratio
+
+
 def test_empty_inputs_yield_empty_frame():
     firm, *_ = _inputs()
     panel = build_panel([firm], {}, {}, {})

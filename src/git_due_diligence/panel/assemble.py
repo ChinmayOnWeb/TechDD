@@ -28,6 +28,13 @@ INDEX_COMPONENTS: list[tuple[str, int]] = [
     ("secret_incidence", -1),
 ]
 
+# Count-type components scale with project size (a 4x-bigger project has ~4x the
+# contributors), so a raw z-score would let size dominate the cross-firm index.
+# We log1p-transform these before standardizing so the index reflects order-of-
+# magnitude differences, not raw scale. The ratio/rate components (shares, ginis,
+# secret_incidence) are already scale-free and pass through untransformed.
+_LOG_COMPONENTS = frozenset({"active_contributors", "bus_factor_50"})
+
 _FUNDAMENTALS_JOIN_TOLERANCE_DAYS = 10
 
 
@@ -108,8 +115,9 @@ def build_panel(firms: list[Firm],
         return panel
     signed = {}
     for column, sign in INDEX_COMPONENTS:
-        std = panel[column].std(ddof=0)
-        signed[column] = sign * (panel[column] - panel[column].mean()) / (std if std > 0 else 1.0)
+        values = np.log1p(panel[column]) if column in _LOG_COMPONENTS else panel[column]
+        std = values.std(ddof=0)
+        signed[column] = sign * (values - values.mean()) / (std if std > 0 else 1.0)
     z = pd.DataFrame(signed)
     panel["repo_health_index_z"] = z.mean(axis=1)
     matrix = z.to_numpy()
