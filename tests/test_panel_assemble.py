@@ -69,6 +69,15 @@ def test_health_indices_present_and_standardized():
     assert panel["repo_health_index_z"].iloc[-1] > panel["repo_health_index_z"].iloc[0]
 
 
+def test_release_cadence_excluded_from_health_index():
+    from git_due_diligence.panel.assemble import INDEX_COMPONENTS
+    names = [c for c, _ in INDEX_COMPONENTS]
+    assert "release_cadence" not in names       # not comparable across firms
+    assert "merge_share" not in names
+    assert "commit_volume" not in names
+    assert "active_contributors" in names
+
+
 def test_empty_inputs_yield_empty_frame():
     firm, *_ = _inputs()
     panel = build_panel([firm], {}, {}, {})

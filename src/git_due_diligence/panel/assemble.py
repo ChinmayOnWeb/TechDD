@@ -6,13 +6,25 @@ from git_due_diligence.panel.edgar import QuarterFundamentals
 from git_due_diligence.panel.history import QuarterMetrics
 from git_due_diligence.panel.universe import Firm
 
+# Components of the composite repo-health index (metric, healthy-direction sign).
+# Every component must be measured comparably across firms; raw counts that only
+# reflect project scale or local convention are kept as descriptive panel columns
+# but excluded here:
+#   - merge_share, commit_volume: workflow/scale controls, not health (excluded
+#     since v1).
+#   - release_cadence: a raw count of release tags, which is dominated by tagging
+#     convention rather than release velocity (MongoDB tags every backport patch
+#     across many major lines -> ~113/window; Elastic ~34; GitLab's release tags
+#     live on unfetched stable branches -> 0). Not comparable across firms and
+#     unmeasurable for some, so excluded from the index and retained only as a
+#     descriptive column. Reintroducing a *comparable* release signal (e.g.
+#     distinct minor-version lines) is future analyst work.
 INDEX_COMPONENTS: list[tuple[str, int]] = [
     ("active_contributors", 1),
     ("top_author_share", -1),
     ("contributor_gini", -1),
     ("bus_factor_50", 1),
     ("churn_gini", -1),
-    ("release_cadence", 1),
     ("secret_incidence", -1),
 ]
 
