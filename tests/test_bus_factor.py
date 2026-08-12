@@ -80,9 +80,10 @@ def test_is_bot_author_recognizes_automation_accounts():
     # "bot"/"bots" segment accounts
     assert bus_factor._is_bot_author("gitlab-bot@gitlab.com")
     assert bus_factor._is_bot_author("49699333+dependabot[bot]@users.noreply.github.com")
-    # release/service automation without a "bot" token
+    # release/service/CI automation without a "bot" token
     assert bus_factor._is_bot_author("delivery-team+release-tools@gitlab.com")
     assert bus_factor._is_bot_author("service-account@example.com")
+    assert bus_factor._is_bot_author("58790826+elasticsearchmachine@users.noreply.github.com")
     # real humans must not be filtered -- including noreply-style addresses
     assert not bus_factor._is_bot_author("noreply@pedro.pombei.ro")
     assert not bus_factor._is_bot_author("heinrich@gitlab.com")

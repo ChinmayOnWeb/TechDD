@@ -20,10 +20,13 @@ _BOT_MARKERS = frozenset({"bot", "bots"})
 
 # Release/service-automation accounts that don't carry a "bot" token but are
 # unambiguously machine identities. Matched as substrings of the full local
-# part (so "delivery-team+release-tools" is caught). Kept deliberately narrow
-# to avoid excluding humans -- e.g. "noreply" is NOT here, since real
-# contributors commit under github-noreply-style addresses.
-_AUTOMATION_MARKERS = ("release-tools", "release-bot", "service-account", "automation")
+# part (so "delivery-team+release-tools" and "elasticsearchmachine" are
+# caught). Kept deliberately narrow to avoid excluding humans -- e.g. "noreply"
+# is NOT here, since real contributors commit under github-noreply-style
+# addresses.
+_AUTOMATION_MARKERS = (
+    "release-tools", "release-bot", "service-account", "automation", "machine",
+)
 
 
 def _is_bot_author(email: str) -> bool:
