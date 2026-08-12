@@ -32,10 +32,40 @@ from git_due_diligence.cohort.frame import FrameEntry
 from git_due_diligence.panel.history import QuarterMetrics, quarterly_metrics
 
 CLONE_TIMEOUT_SECONDS = 300
-# Below this, a repository cannot support a trailing-window panel: the metrics
-# need a year of history plus room for an outcome to occur afterwards.
-MIN_COMMITS = 10
-MIN_QUARTERS = 8
+
+# --- Exclusion thresholds -------------------------------------------------
+#
+# Both are deliberately DERIVED rather than chosen, because an arbitrary
+# exclusion in a survival study is not a neutral data-quality filter: the
+# repositories it removes are systematically the short-lived ones, which are
+# exactly the events being modelled. Excluding them selects on the outcome.
+#
+# MIN_QUARTERS is the minimum follow-up at which the primary outcome is even
+# observable, derived from the measurement machinery:
+#   1 quarter   for the repository to enter the panel, plus
+#   4 quarters  because commit_volume is a TRAILING 365-day count, so the first
+#               all-zero quarter cannot occur until a year after the last
+#               commit, plus
+#   N quarters  for the dormancy run itself.
+# Anything shorter cannot produce an event, so its inclusion would add pure
+# censored noise; anything longer would discard observable events.
+TRAILING_WINDOW_QUARTERS = 4
+
+# MIN_COMMITS is the mechanical floor for the metrics to be computable, and
+# nothing more. One commit already yields authorship and churn (the root commit
+# diffs against the empty tree), so the floor is 1 -- i.e. no substantive
+# exclusion at all. A higher threshold would be a population definition rather
+# than a technical requirement, and would preferentially drop
+# published-once-then-abandoned projects: the maximal-mortality cases, and the
+# ones a survival study most needs. Repository size is instead carried as a
+# covariate so the analysis can condition on it explicitly rather than by
+# exclusion. See docs/cohort-exclusions.md for the measured sensitivity.
+MIN_COMMITS = 1
+
+
+def min_quarters_for(dormancy_quarters: int) -> int:
+    """Minimum follow-up at which a dormancy event can be observed."""
+    return 1 + TRAILING_WINDOW_QUARTERS + dormancy_quarters
 
 
 @dataclass
@@ -95,11 +125,16 @@ def _commit_dates(repo: Path) -> list[date]:
 def harvest_repo(entry: FrameEntry, workdir: Path, today: date,
                  clone: Callable[[str, Path], tuple[bool, str]] | None = None,
                  measure: Callable[[Path, list[date]], list[QuarterMetrics]] | None = None,
+                 min_commits: int = MIN_COMMITS,
+                 min_quarters: int | None = None,
                  ) -> HarvestResult:
     """Clone, measure and delete one repository. The clone is removed even when
     measurement raises, so a failure mid-sweep cannot strand gigabytes on disk."""
     clone = clone or (lambda url, target: clone_bare(url, target))
     measure = measure or (lambda path, ends: quarterly_metrics(path, ends, lite=True))
+    if min_quarters is None:
+        from git_due_diligence.cohort.outcomes import DORMANCY_QUARTERS
+        min_quarters = min_quarters_for(DORMANCY_QUARTERS)
 
     target = workdir / f"{entry.owner}__{entry.repo}.git"
     if target.exists():
@@ -110,7 +145,7 @@ def harvest_repo(entry: FrameEntry, workdir: Path, today: date,
         if not ok:
             return HarvestResult(entry.slug, "clone_failed", 0, "", "", [], error)
         dates = _commit_dates(target)
-        if len(dates) < MIN_COMMITS:
+        if len(dates) < min_commits:
             return HarvestResult(entry.slug, "too_small", len(dates), "", "", [])
         first, last = min(dates), max(dates)
         # The observation window runs to the study end, NOT to the last commit.
@@ -121,7 +156,7 @@ def harvest_repo(entry: FrameEntry, workdir: Path, today: date,
         # short-lived projects below MIN_QUARTERS, reinstating precisely the
         # survivorship bias the complete-enumeration frame exists to avoid.
         quarter_ends = calendar_quarter_ends(first, today)
-        if len(quarter_ends) < MIN_QUARTERS:
+        if len(quarter_ends) < min_quarters:
             return HarvestResult(entry.slug, "too_short", len(dates),
                                  first.isoformat(), last.isoformat(), [])
         metrics = measure(target, quarter_ends)

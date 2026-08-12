@@ -62,11 +62,29 @@ def test_clone_failure_recorded_not_raised(tmp_path):
     assert result.metrics == []
 
 
-def test_small_repo_excluded(tmp_path):
-    source = _make_repo(tmp_path / "src", n_commits=3)
+def test_tiny_repo_is_kept_by_default(tmp_path):
+    """A published-once-then-abandoned project is the maximal-mortality case and
+    must stay in the sample; excluding it by commit count would select on the
+    outcome. The default floor is the mechanical one (metrics computable)."""
+    source = _make_repo(tmp_path / "src", n_commits=3, start_year=2019)
     result = harvest_repo(_entry(), tmp_path / "work", TODAY,
                           clone=_fake_clone_from(source))
+    assert result.status == "ok"
+    assert result.commit_count == 3
+
+
+def test_commit_floor_is_applicable_for_sensitivity_analysis(tmp_path):
+    source = _make_repo(tmp_path / "src", n_commits=3, start_year=2019)
+    result = harvest_repo(_entry(), tmp_path / "work", TODAY,
+                          clone=_fake_clone_from(source), min_commits=10)
     assert result.status == "too_small"
+
+
+def test_min_quarters_derived_from_dormancy_threshold():
+    from git_due_diligence.cohort.harvest import min_quarters_for
+    # 1 entry quarter + 4 trailing-window quarters + N dormancy quarters
+    assert min_quarters_for(2) == 7
+    assert min_quarters_for(4) == 9
 
 
 def test_short_history_excluded(tmp_path):
