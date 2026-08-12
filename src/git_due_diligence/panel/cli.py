@@ -31,14 +31,22 @@ def build(
     output: Path = typer.Option(Path("panel.csv"), "--output", "-o"),
     cache: Path = typer.Option(Path("panel_cache"), "--cache",
                                help="Cache directory for EDGAR/price payloads (reused offline)"),
+    crsp: Path = typer.Option(None, "--crsp", exists=True, dir_okay=False,
+                              help="CRSP daily-stock CSV export; used in preference to Stooq "
+                                   "for any ticker it covers (required for delisted firms)"),
 ) -> None:
     """Build the firm-quarter panel CSV from local clones + EDGAR + prices."""
     _require_panel_extra()
     from git_due_diligence.panel.assemble import build_panel
+    from git_due_diligence.panel.crsp import load_crsp_prices
     from git_due_diligence.panel.edgar import fetch_fundamentals
     from git_due_diligence.panel.metrics_cache import load_or_compute_metrics
-    from git_due_diligence.panel.prices import quarter_end_prices
+    from git_due_diligence.panel.prices import quarter_end_prices, quarter_end_prices_from_series
     from git_due_diligence.panel.universe import fiscal_quarter_ends, load_universe
+
+    crsp_prices = load_crsp_prices(crsp) if crsp else {}
+    if crsp_prices:
+        typer.echo(f"CRSP: {len(crsp_prices)} tickers loaded from {crsp}")
 
     firms = load_universe(universe)
     metrics_by_slug: dict = {}
@@ -56,7 +64,11 @@ def build(
         metrics_by_slug[firm.slug] = load_or_compute_metrics(
             firm.slug, clone, quarter_ends, cache)
         fundamentals_by_slug[firm.slug] = fetch_fundamentals(firm.cik, cache)
-        prices_by_slug[firm.slug] = quarter_end_prices(firm.ticker, quarter_ends, cache)
+        series = crsp_prices.get(firm.ticker.upper())
+        if series:
+            prices_by_slug[firm.slug] = quarter_end_prices_from_series(series, quarter_ends)
+        else:
+            prices_by_slug[firm.slug] = quarter_end_prices(firm.ticker, quarter_ends, cache)
         kept.append(firm)
     panel = build_panel(kept, metrics_by_slug, fundamentals_by_slug, prices_by_slug)
     panel.to_csv(output, index=False)
