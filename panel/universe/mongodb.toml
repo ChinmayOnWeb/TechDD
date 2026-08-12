@@ -1,0 +1,8 @@
+name = "MongoDB, Inc."
+slug = "mongodb"
+ticker = "MDB"
+cik = "0001441816"
+repos = ["https://github.com/mongodb/mongo.git"]
+fiscal_year_end_month = 1
+listed_from = 2017-10-19
+notes = "IPO 2017-10-19; fiscal year ends Jan 31. Flagship server repo github.com/mongodb/mongo (SSPL since 2018; licence change postdates listing)."
