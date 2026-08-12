@@ -192,6 +192,47 @@ def test_torn_checkpoint_line_does_not_break_resume(tmp_path):
     assert completed_slugs(checkpoint) == {"a/b"}
 
 
+def test_clone_timeout_recorded_not_fatal(tmp_path):
+    """A timeout is a property of one repository, not of the sweep. An uncaught
+    TimeoutExpired ended a 4,850-repo run after 866 on ccxt/ccxt."""
+    import subprocess as sp
+
+    from git_due_diligence.cohort.harvest import clone_bare
+
+    def exploding_run(args, timeout):
+        raise sp.TimeoutExpired(args, timeout)
+
+    import git_due_diligence.cohort.harvest as h
+    original, h._run = h._run, exploding_run
+    try:
+        ok, error = clone_bare("https://example.invalid/big.git", tmp_path / "x", timeout=1)
+    finally:
+        h._run = original
+    assert ok is False
+    assert error.startswith("__timeout__")
+
+
+def test_timeout_gets_its_own_status(tmp_path):
+    def timing_out_clone(url, target):
+        return False, "__timeout__ clone exceeded 300s"
+
+    result = harvest_repo(_entry(), tmp_path / "work", TODAY, clone=timing_out_clone)
+    assert result.status == "clone_timeout"          # distinct from clone_failed
+
+
+def test_sweep_stops_cleanly_when_disk_is_low(tmp_path):
+    import pytest
+
+    import git_due_diligence.cohort.harvest as h
+    original, h.free_disk_gb = h.free_disk_gb, lambda: 0.5
+    try:
+        with pytest.raises(RuntimeError, match="checkpointed"):
+            list(harvest_frame([_entry()], tmp_path / "work",
+                               tmp_path / "cp.jsonl", TODAY, min_free_gb=3.0))
+    finally:
+        h.free_disk_gb = original
+
+
 def test_harvest_frame_skips_completed(tmp_path):
     checkpoint = tmp_path / "cp.jsonl"
     append_result(checkpoint, HarvestResult("acme/done", "ok", 5, "", "", []))

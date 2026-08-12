@@ -111,13 +111,27 @@ def _run(args: list[str], timeout: int) -> subprocess.CompletedProcess:
 
 def clone_bare(clone_url: str, target: Path,
                timeout: int = CLONE_TIMEOUT_SECONDS) -> tuple[bool, str]:
-    result = _run(
-        ["git", "clone", "--bare", "--single-branch", "--quiet", clone_url, str(target)],
-        timeout=timeout,
-    )
+    """Clone bare, converting a timeout into a recorded failure.
+
+    subprocess.run raises TimeoutExpired rather than returning non-zero, so an
+    uncaught timeout propagates and kills the whole sweep -- one oversized
+    repository (ccxt/ccxt) ended a 4,850-repo run after 866. A timeout is a
+    property of that repository, not of the sweep, so it is recorded and the
+    sweep continues."""
+    try:
+        result = _run(
+            ["git", "clone", "--bare", "--single-branch", "--quiet", clone_url, str(target)],
+            timeout=timeout,
+        )
+    except subprocess.TimeoutExpired:
+        return False, f"__timeout__ clone exceeded {timeout}s"
     if result.returncode != 0:
         return False, (result.stderr or "").strip()[:300]
     return True, ""
+
+
+def free_disk_gb() -> float:
+    return shutil.disk_usage("/").free / 1e9
 
 
 def _commit_dates(repo: Path) -> list[date]:
@@ -156,7 +170,12 @@ def harvest_repo(entry: FrameEntry, workdir: Path, today: date,
     try:
         ok, error = clone(entry.clone_url, target)
         if not ok:
-            return HarvestResult(entry.slug, "clone_failed", 0, "", "", [], error)
+            # Timeouts are tracked separately from 404s: they are almost always
+            # very large repositories, which skew ACTIVE, so this attrition
+            # biases toward higher measured mortality and must be reported as
+            # its own rate rather than folded into generic clone failures.
+            status = "clone_timeout" if error.startswith("__timeout__") else "clone_failed"
+            return HarvestResult(entry.slug, status, 0, "", "", [], error)
         dates = _commit_dates(target)
         if len(dates) < min_commits:
             return HarvestResult(entry.slug, "too_small", len(dates), "", "", [])
@@ -207,13 +226,23 @@ def append_result(checkpoint: Path, result: HarvestResult) -> None:
 def harvest_frame(entries: Iterable[FrameEntry], workdir: Path, checkpoint: Path,
                   today: date,
                   on_result: Callable[[HarvestResult], None] | None = None,
+                  min_free_gb: float = 3.0,
                   **kwargs) -> Iterator[HarvestResult]:
     """Harvest every frame entry not already in the checkpoint, yielding as it
-    goes. Safe to re-run: completed slugs are skipped."""
+    goes. Safe to re-run: completed slugs are skipped.
+
+    Stops cleanly if free disk falls below `min_free_gb`. Because progress is
+    checkpointed per repository, stopping loses nothing -- a resumed run picks
+    up where this one left off, which is far preferable to filling the volume
+    and failing every subsequent write."""
     done = completed_slugs(checkpoint)
     for entry in entries:
         if entry.slug in done:
             continue
+        if free_disk_gb() < min_free_gb:
+            raise RuntimeError(
+                f"stopping: {free_disk_gb():.1f} GB free, below the {min_free_gb} GB "
+                f"floor. Progress is checkpointed; free space and re-run to resume.")
         result = harvest_repo(entry, workdir, today, **kwargs)
         append_result(checkpoint, result)
         if on_result:
