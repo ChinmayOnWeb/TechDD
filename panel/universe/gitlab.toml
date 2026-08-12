@@ -6,3 +6,4 @@ repos = ["https://gitlab.com/gitlab-org/gitlab.git"]
 fiscal_year_end_month = 1
 listed_from = 2021-10-14
 notes = "IPO 2021-10-14; upstream gitlab-org/gitlab monorepo (the github.com/gitlabhq mirror is bot-authored post-2019 CE/EE merge and unusable for authorship metrics). CE/EE merge 2019 predates listing. LIMITATION: release_cadence is 0 -- GitLab's vNN.x release tags point to stable-branch commits not reachable from master, and gitlab.com load-sheds bulk tag fetches, so tag-based release counts are unavailable for this firm."
+tier = "core"
