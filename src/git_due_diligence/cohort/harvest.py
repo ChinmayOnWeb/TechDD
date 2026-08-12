@@ -113,7 +113,14 @@ def harvest_repo(entry: FrameEntry, workdir: Path, today: date,
         if len(dates) < MIN_COMMITS:
             return HarvestResult(entry.slug, "too_small", len(dates), "", "", [])
         first, last = min(dates), max(dates)
-        quarter_ends = calendar_quarter_ends(first, min(last, today))
+        # The observation window runs to the study end, NOT to the last commit.
+        # Ending it at the last commit would make dormancy unobservable by
+        # construction -- dormancy *is* the absence of commits, so the silent
+        # quarters that constitute the event would all be truncated away and
+        # every repository would come back censored. It would also drop
+        # short-lived projects below MIN_QUARTERS, reinstating precisely the
+        # survivorship bias the complete-enumeration frame exists to avoid.
+        quarter_ends = calendar_quarter_ends(first, today)
         if len(quarter_ends) < MIN_QUARTERS:
             return HarvestResult(entry.slug, "too_short", len(dates),
                                  first.isoformat(), last.isoformat(), [])

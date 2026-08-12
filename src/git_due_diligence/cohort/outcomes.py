@@ -18,10 +18,16 @@ from datetime import date
 
 from git_due_diligence.panel.history import QuarterMetrics
 
-# Consecutive zero-commit quarters before a project is called dormant. Four
-# quarters (a full year of silence) avoids labelling the many projects that
-# simply release infrequently.
-DORMANCY_QUARTERS = 4
+# Consecutive zero-commit quarters before a project is called dormant.
+#
+# NOTE the interaction with the predictor window: commit_volume is itself a
+# TRAILING 365-DAY count, so a single zero quarter already means "no commits in
+# the preceding twelve months". Requiring N consecutive zero quarters therefore
+# means roughly 12 + 3N months of silence, not 3N. Two quarters is ~18 months
+# without a commit -- long enough not to flag projects that merely pause, short
+# enough to observe events inside the window. This threshold is a
+# pre-registration decision and should be frozen before estimation.
+DORMANCY_QUARTERS = 2
 # Fractional fall in active contributors over the comparison horizon.
 COLLAPSE_RATIO = 0.5
 COLLAPSE_HORIZON_QUARTERS = 4

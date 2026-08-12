@@ -23,19 +23,21 @@ def _series(volumes, contributors=None):
     return [_m(v, c, i) for i, (v, c) in enumerate(zip(volumes, contributors))]
 
 
-def test_dormancy_fires_after_four_silent_quarters():
-    spell = first_dormancy("a/b", _series([5, 5, 0, 0, 0, 0, 0]))
+def test_dormancy_fires_at_end_of_silent_run():
+    # quarters passed explicitly so the algorithm test is independent of the
+    # pre-registered default threshold
+    spell = first_dormancy("a/b", _series([5, 5, 0, 0, 0, 0, 0]), quarters=4)
     assert spell.event is True
     assert spell.quarter_index == 5          # end of the silent run, not its start
 
 
 def test_dormancy_not_triggered_by_short_gap():
-    spell = first_dormancy("a/b", _series([5, 0, 0, 0, 5, 5]))
+    spell = first_dormancy("a/b", _series([5, 0, 0, 0, 5, 5]), quarters=4)
     assert spell.event is False              # three quiet quarters, then revival
 
 
 def test_dormancy_run_resets_on_activity():
-    spell = first_dormancy("a/b", _series([0, 0, 0, 5, 0, 0, 0]))
+    spell = first_dormancy("a/b", _series([0, 0, 0, 5, 0, 0, 0]), quarters=4)
     assert spell.event is False
 
 
@@ -69,7 +71,7 @@ def test_mild_decline_is_not_collapse():
 
 def test_observation_rows_stop_at_event():
     metrics = _series([5, 5, 0, 0, 0, 0, 5, 5])
-    spell = first_dormancy("a/b", metrics)
+    spell = first_dormancy("a/b", metrics, quarters=4)
     rows = observation_rows("a/b", metrics, spell)
     assert len(rows) == spell.quarter_index + 1
     assert [r["event"] for r in rows] == [0] * (len(rows) - 1) + [1]

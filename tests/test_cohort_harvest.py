@@ -91,6 +91,31 @@ def test_successful_harvest_produces_metrics_and_deletes_clone(tmp_path):
     assert list(workdir.iterdir()) == []          # clone removed after measuring
 
 
+def test_observation_window_extends_past_last_commit(tmp_path):
+    """A repo abandoned years ago must still yield the silent quarters that
+    constitute dormancy. Ending the window at the last commit would make the
+    primary outcome unobservable by construction."""
+    source = _make_repo(tmp_path / "src", n_commits=24, start_year=2015)
+    result = harvest_repo(_entry(), tmp_path / "work", TODAY,
+                          clone=_fake_clone_from(source))
+    assert result.status == "ok"
+    assert result.last_commit < "2022"
+    silent = [m for m in result.metrics if m.commit_volume == 0]
+    assert len(silent) >= 4                       # dormancy is detectable
+    assert result.metrics[-1].quarter_end >= date(2026, 6, 30)
+
+
+def test_shortlived_repo_still_enters_the_sample(tmp_path):
+    """A project with a burst of commits then abandonment is an EVENT, not an
+    exclusion -- dropping it would select on the outcome."""
+    source = tmp_path / "src"
+    _make_repo(source, n_commits=12, start_year=2021)
+    result = harvest_repo(_entry(), tmp_path / "work", TODAY,
+                          clone=_fake_clone_from(source))
+    assert result.status == "ok"
+    assert any(m.commit_volume == 0 for m in result.metrics)
+
+
 def test_clone_removed_even_when_measurement_raises(tmp_path):
     source = _make_repo(tmp_path / "src", n_commits=24, start_year=2019)
     workdir = tmp_path / "work"
