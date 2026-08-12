@@ -40,16 +40,25 @@ CLONE_TIMEOUT_SECONDS = 300
 # repositories it removes are systematically the short-lived ones, which are
 # exactly the events being modelled. Excluding them selects on the outcome.
 #
-# MIN_QUARTERS is the minimum follow-up at which the primary outcome is even
-# observable, derived from the measurement machinery:
-#   1 quarter   for the repository to enter the panel, plus
-#   4 quarters  because commit_volume is a TRAILING 365-day count, so the first
-#               all-zero quarter cannot occur until a year after the last
-#               commit, plus
-#   N quarters  for the dormancy run itself.
-# Anything shorter cannot produce an event, so its inclusion would add pure
-# censored noise; anything longer would discard observable events.
-TRAILING_WINDOW_QUARTERS = 4
+# MIN_QUARTERS is the MECHANICAL floor -- a non-empty metric series -- and
+# nothing more. An earlier version imposed a minimum follow-up on the theory
+# that shorter histories cannot produce an event and so contribute only noise.
+# Measurement refuted that on two counts:
+#
+#   1. Right-censoring already handles varying follow-up correctly. A repository
+#      observed for three quarters without an event is censored at three
+#      quarters, which is information a hazard model consumes, not noise.
+#   2. The follow-up needed for an event is NOT a constant. Because the
+#      trailing-365-day window is half-open, the first all-zero quarter lands at
+#      index 3 or 4 depending on where in the quarter the first commit falls, so
+#      an event can fire as early as quarter 5 (for a 2-quarter dormancy run).
+#      A hand-derived threshold of 7 would have discarded 3 real events in a
+#      400-repository pilot.
+#
+# Any threshold above the mechanical floor can therefore only lose events. The
+# informational function below reports when events BECOME observable, for the
+# paper's exposition -- it is deliberately not wired to an exclusion.
+MIN_FIRST_ZERO_INDEX = 3        # measured by sweeping all first-commit dates
 
 # MIN_COMMITS is the mechanical floor for the metrics to be computable, and
 # nothing more. One commit already yields authorship and churn (the root commit
@@ -61,11 +70,16 @@ TRAILING_WINDOW_QUARTERS = 4
 # covariate so the analysis can condition on it explicitly rather than by
 # exclusion. See docs/cohort-exclusions.md for the measured sensitivity.
 MIN_COMMITS = 1
+MIN_QUARTERS = 1
 
 
-def min_quarters_for(dormancy_quarters: int) -> int:
-    """Minimum follow-up at which a dormancy event can be observed."""
-    return 1 + TRAILING_WINDOW_QUARTERS + dormancy_quarters
+def earliest_observable_event_quarters(dormancy_quarters: int) -> int:
+    """Fewest quarters of follow-up in which a dormancy event CAN be observed.
+
+    Informational: used to state in the paper when events become observable,
+    and to justify why no minimum-follow-up exclusion is applied. Not used as a
+    filter -- see the note above."""
+    return MIN_FIRST_ZERO_INDEX + dormancy_quarters
 
 
 @dataclass
@@ -133,8 +147,7 @@ def harvest_repo(entry: FrameEntry, workdir: Path, today: date,
     clone = clone or (lambda url, target: clone_bare(url, target))
     measure = measure or (lambda path, ends: quarterly_metrics(path, ends, lite=True))
     if min_quarters is None:
-        from git_due_diligence.cohort.outcomes import DORMANCY_QUARTERS
-        min_quarters = min_quarters_for(DORMANCY_QUARTERS)
+        min_quarters = MIN_QUARTERS
 
     target = workdir / f"{entry.owner}__{entry.repo}.git"
     if target.exists():

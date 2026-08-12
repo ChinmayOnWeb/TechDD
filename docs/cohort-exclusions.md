@@ -72,31 +72,36 @@ Both thresholds are **derived**, not chosen. An arbitrary exclusion in a
 survival study is not a neutral data-quality filter: the repositories it removes
 are systematically the short-lived ones, which are the events being modelled.
 
-### `MIN_QUARTERS` — derived from the measurement machinery
+### `MIN_QUARTERS` — no follow-up exclusion at all
 
-The minimum follow-up at which the primary outcome can be observed at all:
+**A derivation was attempted and measurement refuted it.** The reasoning was
+that a repository needs `1 (entry) + 4 (trailing window) + N (dormancy run)`
+quarters before an event can occur, giving 7, and that anything shorter
+contributes only censored noise. Both halves were wrong:
 
-```
-MIN_QUARTERS = 1 + TRAILING_WINDOW_QUARTERS + DORMANCY_QUARTERS
-             = 1 + 4 + 2 = 7
-```
+1. **The lag is not constant.** The trailing-365-day window is half-open, so the
+   first all-zero quarter lands at index **3 or 4** depending on where in the
+   quarter the first commit falls (measured by sweeping all 366 possible
+   first-commit dates). A 2-quarter dormancy run can therefore fire by quarter
+   **5**, not 7.
+2. **Short follow-up is not noise.** Right-censoring is exactly the mechanism
+   survival analysis uses for varying follow-up. A repository observed for three
+   quarters without an event is censored at three quarters — information the
+   hazard model consumes correctly.
 
-- **1** quarter for the repository to enter the panel.
-- **4** quarters because `commit_volume` is itself a *trailing 365-day* count, so
-  the first all-zero quarter cannot occur until a full year after the last
-  commit.
-- **N** quarters for the dormancy run itself.
+Measured against the 400-repository pilot (328 harvested, 191 dormancy events):
 
-Shorter follow-up cannot produce an event, so including it adds pure censored
-noise; longer would discard observable events. Because it is derived, changing
-the dormancy threshold moves it automatically:
+| threshold | repos kept | events kept | **events lost** |
+|---|---|---|---|
+| 1 (adopted) | 328 | 191 | **0** |
+| 2–6 | 304–258 | 191 | **0** |
+| 7 *(the hand-derivation)* | 249 | 188 | **3** |
+| 8 *(the original value)* | 243 | 184 | **7** |
 
-| `DORMANCY_QUARTERS` | implied `MIN_QUARTERS` |
-|---|---|
-| 1 | 6 |
-| 2 (current) | 7 |
-| 3 | 8 |
-| 4 | 9 |
+Every threshold above the mechanical floor can only lose events, so the floor is
+what is used. `earliest_observable_event_quarters()` is retained as an
+*informational* function for the paper's exposition, deliberately not wired to
+any filter.
 
 ### `MIN_COMMITS` — reduced to its mechanical floor
 
@@ -111,12 +116,28 @@ it explicitly rather than by exclusion.
 
 ### Measured sensitivity
 
-*(populated from `scripts/study_exclusions.py`, which harvests with thresholds
-disabled so the excluded population can be characterised rather than assumed)*
+From `scripts/study_exclusions.py`, which harvests with thresholds disabled so
+the excluded population is characterised rather than assumed. Pilot: the first
+400 frame entries; 328 harvested (16% clone failures), 191 dormancy events (58%).
 
 The question is not how many repositories a filter drops, but whether it drops
-**events at a different rate than non-events**. A filter that removes short-lived
-projects selects on the outcome, and no sample size repairs that.
+**events at a different rate than non-events**:
+
+| commit threshold | repos kept | events kept | event rate, kept | event rate, **dropped** |
+|---|---|---|---|---|
+| 1 (adopted) | 328 | 191 | 58% | — |
+| 3 | 314 | 181 | 58% | **71%** |
+| 5 | 302 | 175 | 58% | **62%** |
+| 10 *(the original value)* | 272 | 154 | 57% | **66%** |
+| 25 | 209 | 108 | 52% | **70%** |
+| 50 | 166 | 82 | 49% | **67%** |
+
+The dropped set has a **higher event rate than the kept set at every
+threshold**, and the effect grows as the threshold rises. This is selection on
+the outcome, measured rather than argued: `MIN_COMMITS = 10` would have
+discarded 37 of 191 events (19%). Small repositories are disproportionately
+dead repositories, which is precisely why they cannot be filtered out of a
+mortality study.
 
 ## 4. Known limitations carried forward
 

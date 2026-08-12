@@ -80,11 +80,27 @@ def test_commit_floor_is_applicable_for_sensitivity_analysis(tmp_path):
     assert result.status == "too_small"
 
 
-def test_min_quarters_derived_from_dormancy_threshold():
-    from git_due_diligence.cohort.harvest import min_quarters_for
-    # 1 entry quarter + 4 trailing-window quarters + N dormancy quarters
-    assert min_quarters_for(2) == 7
-    assert min_quarters_for(4) == 9
+def test_earliest_observable_event_is_informational_not_a_filter():
+    """The half-open trailing window puts the first all-zero quarter at index 3
+    or 4 depending on the first commit's position in its quarter, so a
+    2-quarter dormancy run can fire by quarter 5. A hand-derived threshold of 7
+    discarded real events in a pilot, so no follow-up exclusion is applied."""
+    from git_due_diligence.cohort.harvest import (
+        MIN_QUARTERS, earliest_observable_event_quarters,
+    )
+    assert earliest_observable_event_quarters(2) == 5
+    assert earliest_observable_event_quarters(4) == 7
+    assert MIN_QUARTERS == 1               # mechanical floor only
+
+
+def test_short_followup_repo_is_kept_and_censored(tmp_path):
+    """Right-censoring handles varying follow-up; excluding short histories
+    would discard early events instead."""
+    source = _make_repo(tmp_path / "src", n_commits=4, start_year=2025)
+    result = harvest_repo(_entry(), tmp_path / "work", TODAY,
+                          clone=_fake_clone_from(source))
+    assert result.status == "ok"
+    assert 0 < len(result.metrics) < 8
 
 
 def test_short_history_excluded(tmp_path):
