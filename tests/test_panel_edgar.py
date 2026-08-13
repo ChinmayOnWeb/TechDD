@@ -113,6 +113,34 @@ def test_debt_merges_across_tags_priority_fill(tmp_path):
     assert by_end[date(2024, 7, 31)].debt == 0.0           # redeemed, not None
 
 
+def test_revenue_merges_across_the_asc606_tag_transition(tmp_path):
+    """Firms listed before fiscal 2018 report early quarters under
+    SalesRevenueNet and later ones under RevenueFromContractWithCustomer...,
+    because ASC 606 changed revenue recognition. Taking the first non-empty tag
+    returns only the post-transition fragment: Hortonworks dropped from 15
+    quarters to 4."""
+    facts = {"cik": 4, "facts": {"dei": {}, "us-gaap": {
+        # priority tag: only the post-606 quarters
+        "RevenueFromContractWithCustomerExcludingAssessedTax": {"units": {"USD": [
+            _entry("2018-01-01", "2018-03-31", 300.0),
+        ]}},
+        # superseded tag: the earlier history
+        "SalesRevenueNet": {"units": {"USD": [
+            _entry("2016-01-01", "2016-03-31", 100.0),
+            _entry("2017-01-01", "2017-03-31", 200.0),
+            _entry("2018-01-01", "2018-03-31", 999.0),   # overlaps; must NOT win
+        ]}},
+        "EntityCommonStockSharesOutstanding": {"units": {"shares": []}},
+    }}}
+    import json as _json
+    rows = fetch_fundamentals("0000000004", tmp_path, fetch=lambda url: _json.dumps(facts))
+    by_end = {r.quarter_end: r.revenue for r in rows}
+    assert by_end[date(2016, 3, 31)] == 100.0       # recovered from the older tag
+    assert by_end[date(2017, 3, 31)] == 200.0
+    assert by_end[date(2018, 3, 31)] == 300.0       # priority tag wins on overlap
+    assert len(rows) == 3
+
+
 def test_companyfacts_cached_after_first_fetch(tmp_path):
     calls: list[str] = []
     fetch = _fake_fetch(calls)

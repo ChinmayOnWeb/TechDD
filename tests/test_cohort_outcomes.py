@@ -85,6 +85,29 @@ def test_censored_rows_carry_no_event():
     assert all(r["event"] == 0 for r in rows)
 
 
+def test_gini_is_unidentified_for_single_author_quarters():
+    """At one contributor the Gini is identically 0 -- perfectly "equal" and
+    maximally fragile. Emitting 0.0 would let the small-sample artifact
+    (Deltas 2003) reproduce inside the hazard model."""
+    from git_due_diligence.cohort.outcomes import gini_is_identified
+
+    assert gini_is_identified(2) is True
+    assert gini_is_identified(1) is False
+    assert gini_is_identified(0) is False
+
+    solo = _series([5, 5, 5], contributors=[1, 1, 1])
+    rows = observation_rows("a/b", solo, first_dormancy("a/b", solo))
+    assert all(r["contributor_gini"] is None for r in rows)
+    assert all(r["gini_identified"] == 0 for r in rows)
+
+
+def test_gini_retained_when_multiple_contributors():
+    multi = _series([5, 5, 5], contributors=[3, 3, 3])
+    rows = observation_rows("a/b", multi, first_dormancy("a/b", multi))
+    assert all(r["contributor_gini"] is not None for r in rows)
+    assert all(r["gini_identified"] == 1 for r in rows)
+
+
 def test_observation_rows_carry_point_in_time_predictors():
     metrics = _series([5, 5, 5])
     rows = observation_rows("a/b", metrics, first_dormancy("a/b", metrics))

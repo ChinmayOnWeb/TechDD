@@ -19,10 +19,18 @@ from git_due_diligence.panel.universe import Firm
 #     unmeasurable for some, so excluded from the index and retained only as a
 #     descriptive column. Reintroducing a *comparable* release signal (e.g.
 #     distinct minor-version lines) is future analyst work.
+#   - contributor_gini: excluded because it has no stable healthy direction.
+#     Two real mechanisms run opposite ways at different scales -- bus-factor
+#     risk (concentration is dangerous if the key person leaves) and ownership
+#     (a project with a committed lead maintainer persists where one with only
+#     casual contributors does not). In the cohort, lower Gini predicts dormancy
+#     in 9 of 12 contributor x volume cells, and the association is STRONGEST
+#     where Gini is best measured, so it is not a small-sample artifact. A
+#     composite must assert a sign; this metric does not have one that holds
+#     across scales. See docs/decision-gini-sign-convention.md.
 INDEX_COMPONENTS: list[tuple[str, int]] = [
     ("active_contributors", 1),
     ("top_author_share", -1),
-    ("contributor_gini", -1),
     ("bus_factor_50", 1),
     ("churn_gini", -1),
     ("secret_incidence", -1),

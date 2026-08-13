@@ -89,6 +89,22 @@ def first_contributor_collapse(slug: str, metrics: list[QuarterMetrics],
                         metrics[last].quarter_end if metrics else None)
 
 
+# Below this many contributors the Gini coefficient carries no information: at
+# n = 1 it is identically 0 (perfectly "equal", and maximally fragile), and it
+# is downward-biased in small samples generally, with the bias depending on n
+# (Deltas 2003, Review of Economics and Statistics 85(1)). Comparing Gini across
+# repositories with different contributor counts is exactly the cross-subsample
+# comparison that paper warns produces false concentration trends -- and it is
+# what makes dormant repositories appear to have "lower inequality" here.
+# See docs/decision-gini-sign-convention.md.
+GINI_MIN_CONTRIBUTORS = 2
+
+
+def gini_is_identified(active_contributors: int) -> bool:
+    """Whether contributor_gini carries information at this contributor count."""
+    return active_contributors >= GINI_MIN_CONTRIBUTORS
+
+
 def observation_rows(slug: str, metrics: list[QuarterMetrics],
                      spell: OutcomeSpell) -> list[dict]:
     """Repository-quarter rows up to and including the event (or censoring),
@@ -108,7 +124,13 @@ def observation_rows(slug: str, metrics: list[QuarterMetrics],
             "event": int(spell.event and is_last),
             "active_contributors": row.active_contributors,
             "top_author_share": row.top_author_share,
-            "contributor_gini": row.contributor_gini,
+            # None, not 0.0, when unidentified: a single-author quarter has Gini
+            # 0 by construction, and pooling that with genuine equality would
+            # reproduce the small-sample artifact inside the hazard model.
+            "contributor_gini": (row.contributor_gini
+                                 if gini_is_identified(row.active_contributors)
+                                 else None),
+            "gini_identified": int(gini_is_identified(row.active_contributors)),
             "bus_factor_50": row.bus_factor_50,
             "churn_gini": row.churn_gini,
             "merge_share": row.merge_share,
