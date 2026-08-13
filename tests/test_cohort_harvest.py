@@ -233,6 +233,53 @@ def test_sweep_stops_cleanly_when_disk_is_low(tmp_path):
         h.free_disk_gb = original
 
 
+def test_parallel_harvest_covers_every_entry_once(tmp_path):
+    from git_due_diligence.cohort.harvest import harvest_frame_parallel
+
+    entries = [_entry(owner="o", repo=f"r{i}") for i in range(25)]
+    seen: list[str] = []
+    lock_seen = __import__("threading").Lock()
+
+    def clone(url, target):
+        with lock_seen:
+            seen.append(url)
+        return False, "stub"
+
+    results = list(harvest_frame_parallel(entries, tmp_path / "work",
+                                          tmp_path / "cp.jsonl", TODAY,
+                                          workers=4, clone=clone))
+    assert len(results) == 25
+    assert len({r.slug for r in results}) == 25       # no duplicates
+    assert len(seen) == 25                            # each cloned exactly once
+
+
+def test_parallel_checkpoint_is_not_corrupted_by_concurrent_writes(tmp_path):
+    from git_due_diligence.cohort.harvest import harvest_frame_parallel
+
+    entries = [_entry(owner="o", repo=f"r{i}") for i in range(40)]
+    checkpoint = tmp_path / "cp.jsonl"
+    list(harvest_frame_parallel(entries, tmp_path / "work", checkpoint, TODAY,
+                                workers=8, clone=lambda u, t: (False, "stub")))
+    lines = [l for l in checkpoint.read_text().splitlines() if l.strip()]
+    assert len(lines) == 40
+    for line in lines:
+        json.loads(line)                              # every line intact
+    assert len(completed_slugs(checkpoint)) == 40
+
+
+def test_parallel_harvest_resumes_from_checkpoint(tmp_path):
+    from git_due_diligence.cohort.harvest import harvest_frame_parallel
+
+    checkpoint = tmp_path / "cp.jsonl"
+    append_result(checkpoint, HarvestResult("o/r0", "ok", 5, "", "", []))
+    entries = [_entry(owner="o", repo=f"r{i}") for i in range(5)]
+    results = list(harvest_frame_parallel(entries, tmp_path / "work", checkpoint,
+                                          TODAY, workers=4,
+                                          clone=lambda u, t: (False, "stub")))
+    assert "o/r0" not in {r.slug for r in results}
+    assert len(results) == 4
+
+
 def test_harvest_frame_skips_completed(tmp_path):
     checkpoint = tmp_path / "cp.jsonl"
     append_result(checkpoint, HarvestResult("acme/done", "ok", 5, "", "", []))

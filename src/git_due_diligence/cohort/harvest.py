@@ -23,6 +23,8 @@ import dataclasses
 import json
 import shutil
 import subprocess
+import threading
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
@@ -221,6 +223,44 @@ def append_result(checkpoint: Path, result: HarvestResult) -> None:
     ]
     with checkpoint.open("a", encoding="utf-8") as handle:
         handle.write(json.dumps(row) + "\n")
+
+
+def harvest_frame_parallel(entries: Iterable[FrameEntry], workdir: Path,
+                           checkpoint: Path, today: date,
+                           workers: int = 8, min_free_gb: float = 4.0,
+                           **kwargs) -> Iterator[HarvestResult]:
+    """Harvest concurrently. Each repository is still cloned, measured and
+    deleted individually; only the number in flight changes.
+
+    The work is network-bound (git clone dominates; measurement is milliseconds
+    on a bare clone), so throughput scales close to linearly with workers. That
+    matters beyond convenience: a serial sweep of this frame takes hours, which
+    is longer than a background process reliably survives here, so parallelism
+    is what makes the sweep completable at all rather than merely faster.
+
+    Work is submitted in bounded batches instead of all at once so the disk
+    guard can halt between batches -- with `workers` clones in flight, peak disk
+    is `workers` repositories rather than one, so the floor is raised.
+    Checkpoint appends are serialised under a lock; the JSONL file is the
+    recovery record and interleaved writes would corrupt it."""
+    done = completed_slugs(checkpoint)
+    todo = [e for e in entries if e.slug not in done]
+    write_lock = threading.Lock()
+    batch = max(workers * 4, 1)
+
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        for start in range(0, len(todo), batch):
+            if free_disk_gb() < min_free_gb:
+                raise RuntimeError(
+                    f"stopping: {free_disk_gb():.1f} GB free, below the "
+                    f"{min_free_gb} GB floor. Progress is checkpointed; free "
+                    f"space and re-run to resume.")
+            chunk = todo[start:start + batch]
+            for result in pool.map(
+                    lambda e: harvest_repo(e, workdir, today, **kwargs), chunk):
+                with write_lock:
+                    append_result(checkpoint, result)
+                yield result
 
 
 def harvest_frame(entries: Iterable[FrameEntry], workdir: Path, checkpoint: Path,
