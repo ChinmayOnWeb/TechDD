@@ -1,91 +1,107 @@
-# Part C: preliminary measurement findings
+# Part C: measurement findings
 
-From the first ~800 PyPI repositories of the full sweep. **Descriptive only** —
-the hazard model on the complete cohort is the actual test. Recorded now because
-three of these findings change how the estimation should be specified, and one
-of them challenges an assumption baked into the health index.
+From the harvested cohort: **3,797 usable repositories, 41,547 repository-quarters**
+across two independently-drawn ecosystem frames. **Descriptive only** — the
+hazard model is the actual test. Recorded because three of these findings change
+how the estimation must be specified, and one challenges an assumption baked
+into the health index.
 
-## 1. A third of the population is single-author
+Both frames are random subsamples of their complete-enumeration draws (frame
+order is random: 51% adjacent out-of-order pairs, halves indistinguishable on
+staleness and release count), so partial harvests are unbiased rather than
+biased prefixes.
 
-| peak contributors ever | repos | share |
+## Cohort summary
+
+| | PyPI (primary) | npm (robustness) |
 |---|---|---|
-| 1 (solo) | 274 | **34.5%** |
-| 2 | 209 | 26.3% |
-| 3–5 | 167 | 21.0% |
-| 6–10 | 69 | 8.7% |
-| 11+ | 75 | 9.4% |
+| attempted | 3,485 | 1,368 |
+| usable | 2,755 | 1,042 |
+| repository-quarters | 29,973 | 11,574 |
+| clone-failure rate | 19% | 20% |
+| dormancy event rate | **60%** | **67%** |
+| solo (never >1 contributor) | **38%** | **41%** |
 
-For the 35% that never exceed one contributor, `bus_factor_50 = 1`,
-`top_author_share = 1.0` and `contributor_gini = 0` **by construction** — four of
-the six index components are constants, so the health construct is only
-partially identified in that subpopulation.
+npm is the deader ecosystem on both frame staleness (47% vs 38% with no release
+since 2023) and realised mortality (67% vs 60%), consistent between the two
+independent measurements.
 
-This is a consequence of sampling the ecosystem honestly. The index was designed
+## 1. Findings replicate across both ecosystems
+
+Every predictor separates in the same direction in both frames — the point of
+carrying a robustness ecosystem rather than pooling:
+
+| predictor (median over active quarters) | PyPI dormant | PyPI active | npm dormant | npm active | same direction |
+|---|---|---|---|---|---|
+| active_contributors | 1.571 | 2.000 | 1.500 | 2.000 | ✅ |
+| contributor_gini | 0.112 | 0.240 | 0.049 | 0.323 | ✅ |
+| churn_gini | 0.632 | 0.685 | 0.695 | 0.783 | ✅ |
+| commit_volume | 15.200 | 32.091 | 12.000 | 51.000 | ✅ |
+
+## 2. Roughly 40% of the population is single-author
+
+38% (PyPI) and 41% (npm) of repositories never exceed one contributor. For
+those, `bus_factor_50 = 1`, `top_author_share = 1.0` and `contributor_gini = 0`
+**by construction** — four of the six index components are constants, so the
+health construct is only partially identified in that subpopulation.
+
+This follows from sampling the ecosystem honestly. The index was designed
 against large corporate repositories (GitLab peaks around 1,360 contributors);
-the median randomly-sampled PyPI package is a one-person project. Solo projects
-are *not* excluded — that would be the selection-on-outcome error again — but
-results should be reported **stratified by solo / multi-contributor**, since the
-two subpopulations support different amounts of identification.
+the median randomly-sampled package is a one-person project. Solo projects are
+*not* excluded — that would repeat the selection-on-outcome error — but results
+should be reported **stratified by solo / multi-contributor**.
 
-## 2. Baseline-quarter predictors are degenerate — use time-varying covariates
+## 3. Baseline-quarter predictors are degenerate — use time-varying covariates
 
 Comparing predictors at each repository's *first* observed quarter shows no
-difference whatsoever between projects that later died and those that did not:
-every project starts as one person's first commits. A baseline-covariate
-specification would therefore find nothing, for a reason that has nothing to do
-with the hypothesis.
+difference at all between projects that later died and those that did not: every
+project starts as one person's first commits. A baseline-covariate specification
+would find nothing, for a reason unrelated to the hypothesis. Predictors must
+enter as **time-varying covariates** across all repository-quarters, which is
+what `observation_rows()` emits.
 
-The predictors must enter as **time-varying covariates** across all
-repository-quarters, which is what `observation_rows()` emits. Measured over each
-repository's active quarters, the differences appear:
+## 4. `commit_volume` separates strongly — but near-tautologically
 
-| predictor (median over active quarters) | dormant | still active | ratio |
-|---|---|---|---|
-| active_contributors | 1.67 | 2.00 | 0.83× |
-| contributor_gini | 0.139 | 0.254 | 0.55× |
-| churn_gini | 0.650 | 0.690 | 0.94× |
-| commit_volume | 18.0 | 38.2 | **0.47×** |
-| bus_factor_50 | 1.00 | 1.00 | 1.00× |
+Volume shows the largest gap in both ecosystems (PyPI 0.47×, npm 0.24×) and is
+the least interesting: dormancy *is* the absence of commits, so a low-activity
+project being more likely to become a no-activity project is close to
+definitional.
 
-Restricted to multi-contributor repositories the pattern holds and sharpens on
-volume (23.5 vs 56.8, 0.41×).
+The substantive question is whether the **structural** metrics predict dormancy
+*conditional on* activity. Activity must therefore enter the hazard model as a
+control, or the structural coefficients will simply absorb it.
 
-## 3. `commit_volume` separates strongly — but near-tautologically
+## 5. `contributor_gini` carries the wrong sign for this population
 
-Volume shows the largest gap, and it is the least interesting one: dormancy *is*
-the absence of commits, so a low-activity project being more likely to become a
-no-activity project is close to definitional rather than a finding.
+The health index treats **lower** Gini as healthier (`sign = -1`), reasoning that
+concentrated contribution is a bus-factor risk. In both ecosystems the
+association runs the other way, and strongly: dormant repositories have *lower*
+Gini (PyPI 0.112 vs 0.240; npm 0.049 vs 0.323).
 
-The substantive question is whether the **structural** metrics — contributor
-count, concentration, bus factor — predict dormancy *conditional on* activity
-level. Activity must therefore enter the hazard model as a control, not be
-omitted, or the structural coefficients will simply absorb it.
-
-## 4. `contributor_gini` may carry the wrong sign for this population
-
-The health index treats **lower** Gini as healthier (`sign = -1`), on the
-reasoning that concentrated contribution is a bus-factor risk. In this
-population the association runs the other way: dormant repositories have
-*lower* Gini (0.139 vs 0.254), and the direction survives restricting to
-multi-contributor repositories (0.278 vs 0.375).
-
-The likely explanation is mechanical rather than substantive: **Gini is
-confounded with contributor count.** A one-author project has Gini 0 by
-definition — perfectly "equal", and also maximally fragile. Inequality cannot
-exist until there are several contributors, so low Gini here is a proxy for
-*few contributors*, not for equitable participation.
+The explanation is mechanical rather than substantive: **Gini is confounded with
+contributor count.** A one-author project has Gini 0 by definition — perfectly
+"equal", and also maximally fragile. Inequality cannot exist until there are
+several contributors, so low Gini here proxies for *few contributors*, not for
+equitable participation.
 
 Consequences:
 
 - The index's sign assumptions were derived from large corporate repositories
-  and should not be assumed to transfer to a randomly-sampled ecosystem.
+  and do not transfer to a randomly-sampled ecosystem.
 - Gini should be reported both raw and conditional on contributor count.
-- This is a **pre-registration decision**: freeze the sign convention before
-  estimation, and report the alternative as robustness rather than choosing the
-  sign after seeing which one works.
+- **Pre-registration decision:** freeze the sign convention before estimation and
+  report the alternative as robustness, rather than choosing the sign after
+  seeing which one works. This is the single most important open item.
+
+## 6. Clone attrition is missing-not-at-random
+
+19–20% of frame repositories fail to clone (deleted, renamed, or made private),
+consistent across both ecosystems. Deleted repositories are plausibly *more*
+likely to be dead ones, so this attrition likely biases **against** detecting
+mortality. Reported as a rate; warrants a bounding exercise rather than silent
+exclusion.
 
 ## Open item
 
 Whether these directions survive in the hazard model with activity controlled is
-the actual test, and is not answered here. The full sweep (PyPI + npm, ~9,000
-repositories) is required before estimating anything.
+the actual test, and is not answered here.
