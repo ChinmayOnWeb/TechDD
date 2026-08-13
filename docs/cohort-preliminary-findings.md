@@ -1,6 +1,6 @@
 # Part C: measurement findings
 
-From the harvested cohort: **3,797 usable repositories, 41,547 repository-quarters**
+From the harvested cohort: **3,798 usable repositories, 41,596 repository-quarters**
 across two independently-drawn ecosystem frames. **Descriptive only** — the
 hazard model is the actual test. Recorded because three of these findings change
 how the estimation must be specified, and one challenges an assumption baked
@@ -15,9 +15,9 @@ biased prefixes.
 
 | | PyPI (primary) | npm (robustness) |
 |---|---|---|
-| attempted | 3,485 | 1,368 |
-| usable | 2,755 | 1,042 |
-| repository-quarters | 29,973 | 11,574 |
+| attempted | 3,485 | 1,369 |
+| usable | 2,755 | 1,043 |
+| repository-quarters | 29,973 | 11,623 |
 | clone-failure rate | 19% | 20% |
 | dormancy event rate | **60%** | **67%** |
 | solo (never >1 contributor) | **38%** | **41%** |
