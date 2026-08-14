@@ -6,15 +6,42 @@ from git_due_diligence.panel.edgar import QuarterFundamentals
 from git_due_diligence.panel.history import QuarterMetrics
 from git_due_diligence.panel.universe import Firm
 
+# Components of the composite repo-health index (metric, healthy-direction sign).
+# Every component must be measured comparably across firms; raw counts that only
+# reflect project scale or local convention are kept as descriptive panel columns
+# but excluded here:
+#   - merge_share, commit_volume: workflow/scale controls, not health (excluded
+#     since v1).
+#   - release_cadence: a raw count of release tags, which is dominated by tagging
+#     convention rather than release velocity (MongoDB tags every backport patch
+#     across many major lines -> ~113/window; Elastic ~34; GitLab's release tags
+#     live on unfetched stable branches -> 0). Not comparable across firms and
+#     unmeasurable for some, so excluded from the index and retained only as a
+#     descriptive column. Reintroducing a *comparable* release signal (e.g.
+#     distinct minor-version lines) is future analyst work.
+#   - contributor_gini: excluded because it has no stable healthy direction.
+#     Two real mechanisms run opposite ways at different scales -- bus-factor
+#     risk (concentration is dangerous if the key person leaves) and ownership
+#     (a project with a committed lead maintainer persists where one with only
+#     casual contributors does not). In the cohort, lower Gini predicts dormancy
+#     in 9 of 12 contributor x volume cells, and the association is STRONGEST
+#     where Gini is best measured, so it is not a small-sample artifact. A
+#     composite must assert a sign; this metric does not have one that holds
+#     across scales. See docs/decision-gini-sign-convention.md.
 INDEX_COMPONENTS: list[tuple[str, int]] = [
     ("active_contributors", 1),
     ("top_author_share", -1),
-    ("contributor_gini", -1),
     ("bus_factor_50", 1),
     ("churn_gini", -1),
-    ("release_cadence", 1),
     ("secret_incidence", -1),
 ]
+
+# Count-type components scale with project size (a 4x-bigger project has ~4x the
+# contributors), so a raw z-score would let size dominate the cross-firm index.
+# We log1p-transform these before standardizing so the index reflects order-of-
+# magnitude differences, not raw scale. The ratio/rate components (shares, ginis,
+# secret_incidence) are already scale-free and pass through untransformed.
+_LOG_COMPONENTS = frozenset({"active_contributors", "bus_factor_50"})
 
 _FUNDAMENTALS_JOIN_TOLERANCE_DAYS = 10
 
@@ -96,8 +123,9 @@ def build_panel(firms: list[Firm],
         return panel
     signed = {}
     for column, sign in INDEX_COMPONENTS:
-        std = panel[column].std(ddof=0)
-        signed[column] = sign * (panel[column] - panel[column].mean()) / (std if std > 0 else 1.0)
+        values = np.log1p(panel[column]) if column in _LOG_COMPONENTS else panel[column]
+        std = values.std(ddof=0)
+        signed[column] = sign * (values - values.mean()) / (std if std > 0 else 1.0)
     z = pd.DataFrame(signed)
     panel["repo_health_index_z"] = z.mean(axis=1)
     matrix = z.to_numpy()

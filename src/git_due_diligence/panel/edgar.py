@@ -60,20 +60,35 @@ def fetch_companyfacts(cik: str, cache_dir: Path,
 
 def _duration_series(section: dict, tags: list[str],
                      day_range: tuple[int, int]) -> dict[date, float]:
+    """Union of several tags' duration facts, filled in priority order: an
+    earlier tag wins for period-ends it covers, later tags fill the rest.
+
+    Selecting the first non-empty tag outright (the previous behaviour) breaks
+    on the ASC 606 transition. Revenue recognition changed for fiscal 2018, so
+    firms listed before then report early quarters under `SalesRevenueNet` and
+    later ones under `RevenueFromContractWithCustomer...`. Taking the first
+    non-empty tag returns only the post-2018 fragment and silently discards the
+    earlier history -- for Hortonworks that meant 4 quarters instead of 15
+    (earliest 2017-06 rather than 2014-03), and MongoDB lost 4 quarters back to
+    2016.
+
+    Known limitation: ASC 606 changed *recognition*, so pre- and post-transition
+    figures are not perfectly comparable and splicing them leaves a
+    methodological seam at fiscal 2018. Firms generally restated comparatives,
+    but the superseded tags may carry pre-restatement values. Documented in the
+    study design rather than silently smoothed; losing 11 of 15 quarters is
+    plainly worse than a documented seam."""
     lo, hi = day_range
+    merged: dict[date, float] = {}
     for tag in tags:
-        entries = section.get(tag, {}).get("units", {}).get("USD", [])
-        series: dict[date, float] = {}
-        for entry in entries:
+        for entry in section.get(tag, {}).get("units", {}).get("USD", []):
             if "start" not in entry or entry.get("form") not in ("10-Q", "10-K"):
                 continue
             start = date.fromisoformat(entry["start"])
             end = date.fromisoformat(entry["end"])
             if lo <= (end - start).days <= hi:
-                series[end] = float(entry["val"])
-        if series:
-            return series
-    return {}
+                merged.setdefault(end, float(entry["val"]))
+    return merged
 
 
 def _derive_q4(quarterly: dict[date, float], annual: dict[date, float]) -> dict[date, float]:
@@ -97,6 +112,24 @@ def _instant_series(section: dict, tags: list[str], unit: str) -> dict[date, flo
         if series:
             return series
     return {}
+
+
+def _merged_instant_series(section: dict, tags: list[str], unit: str) -> dict[date, float]:
+    """Union of several tags' instant series, filled in priority order: an
+    earlier tag's value wins for dates it covers, later tags fill remaining
+    dates. Unlike _instant_series (first non-empty tag wins outright), this
+    stops a sparse high-priority roll-up (e.g. a single stale LongTermDebt
+    point) from shadowing a richer component series (ConvertibleDebtNoncurrent)
+    on the dates the roll-up never reports."""
+    merged: dict[date, float] = {}
+    for tag in tags:
+        entries = section.get(tag, {}).get("units", {}).get(unit, [])
+        for e in entries:
+            if "start" in e:
+                continue
+            when = date.fromisoformat(e["end"])
+            merged.setdefault(when, float(e["val"]))
+    return merged
 
 
 def _shares_series(gaap: dict, dei: dict) -> dict[date, float]:
@@ -141,7 +174,7 @@ def fetch_fundamentals(cik: str, cache_dir: Path,
         _duration_series(gaap, _OPERATING_INCOME_TAGS, _ANNUAL_DAYS),
     )
     cash = _instant_series(gaap, _CASH_TAGS, "USD")
-    debt = _instant_series(gaap, _DEBT_TAGS, "USD")
+    debt = _merged_instant_series(gaap, _DEBT_TAGS, "USD")
     shares = _shares_series(gaap, dei)
 
     return [

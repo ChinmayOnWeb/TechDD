@@ -1,0 +1,9 @@
+name = "Elastic N.V."
+slug = "elastic"
+ticker = "ESTC"
+cik = "0001707753"
+repos = ["https://github.com/elastic/elasticsearch.git"]
+fiscal_year_end_month = 4
+listed_from = 2018-10-05
+notes = "IPO 2018-10-05; fiscal year ends Apr 30. Flagship repo github.com/elastic/elasticsearch (SSPL/Elastic-License 2021, AGPL added 2024; both postdate listing)."
+tier = "core"

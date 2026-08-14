@@ -69,6 +69,23 @@ def test_health_indices_present_and_standardized():
     assert panel["repo_health_index_z"].iloc[-1] > panel["repo_health_index_z"].iloc[0]
 
 
+def test_components_without_a_stable_healthy_direction_are_excluded():
+    from git_due_diligence.panel.assemble import INDEX_COMPONENTS
+    names = [c for c, _ in INDEX_COMPONENTS]
+    assert "release_cadence" not in names       # not comparable across firms
+    assert "merge_share" not in names           # workflow, not health
+    assert "commit_volume" not in names         # scale control
+    assert "contributor_gini" not in names      # sign is scale-dependent
+    assert "active_contributors" in names
+
+
+def test_count_components_log_transformed():
+    from git_due_diligence.panel.assemble import _LOG_COMPONENTS
+    assert "active_contributors" in _LOG_COMPONENTS
+    assert "bus_factor_50" in _LOG_COMPONENTS
+    assert "top_author_share" not in _LOG_COMPONENTS   # already a ratio
+
+
 def test_empty_inputs_yield_empty_frame():
     firm, *_ = _inputs()
     panel = build_panel([firm], {}, {}, {})

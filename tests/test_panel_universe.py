@@ -41,6 +41,23 @@ def test_cik_zero_padded_from_int(tmp_path):
     assert firms[0].cik == "0001653482"
 
 
+def test_tier_defaults_to_core(tmp_path):
+    firms = load_universe(_write(tmp_path, "gitlab.toml", GITLAB_TOML))
+    assert firms[0].tier == "core"
+
+
+def test_tier_adjacent_parsed(tmp_path):
+    body = GITLAB_TOML + '\ntier = "adjacent"\n'
+    firms = load_universe(_write(tmp_path, "gitlab.toml", body))
+    assert firms[0].tier == "adjacent"
+
+
+def test_invalid_tier_raises(tmp_path):
+    body = GITLAB_TOML + '\ntier = "peripheral"\n'
+    with pytest.raises(ValueError, match="tier"):
+        load_universe(_write(tmp_path, "gitlab.toml", body))
+
+
 def test_missing_key_raises(tmp_path):
     body = GITLAB_TOML.replace('ticker = "GTLB"\n', "")
     with pytest.raises(ValueError, match="ticker"):

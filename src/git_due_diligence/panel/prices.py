@@ -38,9 +38,12 @@ def _load_closes(ticker: str, cache_dir: Path,
     return closes
 
 
-def quarter_end_prices(ticker: str, dates: list[date], cache_dir: Path,
-                       fetch: Callable[[str], str] = _default_fetch) -> dict[date, float | None]:
-    closes = _load_closes(ticker, cache_dir, fetch)
+def quarter_end_prices_from_series(closes: list[tuple[date, float]],
+                                   dates: list[date]) -> dict[date, float | None]:
+    """Last close on or before each date, or None when the nearest prior close
+    is more than _MAX_STALENESS_DAYS old (pre-IPO, post-delisting, data gap).
+    `closes` must be sorted ascending. Shared by the Stooq and CRSP paths so
+    both sources resolve quarter-ends identically."""
     close_dates = [d for d, _ in closes]
     out: dict[date, float | None] = {}
     for target in dates:
@@ -50,3 +53,8 @@ def quarter_end_prices(ticker: str, dates: list[date], cache_dir: Path,
         else:
             out[target] = closes[idx][1]
     return out
+
+
+def quarter_end_prices(ticker: str, dates: list[date], cache_dir: Path,
+                       fetch: Callable[[str], str] = _default_fetch) -> dict[date, float | None]:
+    return quarter_end_prices_from_series(_load_closes(ticker, cache_dir, fetch), dates)
