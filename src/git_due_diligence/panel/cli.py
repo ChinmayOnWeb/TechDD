@@ -103,7 +103,32 @@ def regress(
     except ValueError as exc:
         typer.echo(f"error: {exc}", err=True)
         raise typer.Exit(code=1)
+    diagnostics = results.pop("diagnostics", {})
+    dropped = diagnostics.get("h1_singletons_dropped", 0)
+    if dropped:
+        typer.echo(
+            f"Dropped {dropped} singleton observation(s) per Correia (2015); "
+            f"H1 estimated on {diagnostics.get('h1_observations')} firm-quarters "
+            f"across {diagnostics.get('h1_firms')} firms.")
     for name, res in results.items():
         coefficient = res.params.get("repo_health_index_z")
         typer.echo(f"{name}: repo_health_index_z = {coefficient:+.4f}")
-    typer.echo(f"Wrote {len(results)} summary tables to {output_dir}")
+
+    bootstrap = diagnostics.get("bootstrap")
+    if bootstrap is not None and len(bootstrap):
+        typer.echo("\nWild cluster bootstrap (headline inference):")
+        for row in bootstrap.itertuples():
+            typer.echo(
+                f"  {row.model:<8} beta={row.coefficient:+.4f} "
+                f"t={row.t_observed:+.3f} p={row.p_value:.4f} "
+                f"({row.replications} refits, "
+                f"{'exact' if row.exact_enumeration else 'sampled'})")
+        worst = bootstrap.loc[bootstrap["min_attainable_p"].idxmax()]
+        typer.echo(
+            f"  NOTE: cluster counts run {int(bootstrap['n_clusters'].min())}-"
+            f"{int(bootstrap['n_clusters'].max())}; at the smallest "
+            f"({int(worst['n_clusters'])}, model {worst['model']}) the lowest "
+            f"attainable p-value is {worst['min_attainable_p']:.3f}. "
+            f"Significance at 1% is unreachable by construction. Asymptotic "
+            f"cluster-robust SEs in the tables are unreliable at this count.")
+    typer.echo(f"\nWrote {len(results)} summary tables to {output_dir}")
