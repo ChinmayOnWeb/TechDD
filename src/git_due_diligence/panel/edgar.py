@@ -25,6 +25,12 @@ _SHARES_INSTANT_TAGS = ["EntityCommonStockSharesOutstanding", "CommonStockShares
 _SHARES_DURATION_FALLBACK_TAGS = [
     "WeightedAverageNumberOfSharesOutstandingBasic",
     "WeightedAverageNumberOfDilutedSharesOutstanding",
+    # Singular "Share", not a typo: firms reporting a loss have identical basic
+    # and diluted counts and file this combined tag instead. It is what MongoDB
+    # used before 2020, and omitting it left every pre-2020 quarter without a
+    # share count -- which silently truncated the panel by three years even
+    # after the revenue history had been recovered.
+    "WeightedAverageNumberOfShareOutstandingBasicAndDiluted",
 ]
 _QUARTER_DAYS = (80, 100)
 _ANNUAL_DAYS = (350, 380)
@@ -133,21 +139,23 @@ def _merged_instant_series(section: dict, tags: list[str], unit: str) -> dict[da
 
 
 def _shares_series(gaap: dict, dei: dict) -> dict[date, float]:
-    """Prefer the DEI instant tag; fall back to a duration-tag (weighted-average
-    share count from 10-Q/10-K) keyed by period end when the instant is absent."""
-    instant = _instant_series(dei, _SHARES_INSTANT_TAGS, "shares")
-    if instant:
-        return instant
+    """Share counts merged across sources by period end, in priority order.
+
+    The DEI cover-page instant is preferred where present, with weighted-average
+    counts filling the rest. Merging rather than taking the first non-empty
+    source matters because coverage differs by era, not just by firm: MongoDB
+    reports the DEI instant only from 2020 and weighted-average-basic only from
+    2021, while its 2016-2019 quarters sit under the combined
+    basic-and-diluted tag. Preferring one source outright therefore left three
+    years without share counts -- and since the panel requires shares, those
+    quarters were dropped even though revenue and prices were available."""
+    merged: dict[date, float] = dict(_instant_series(dei, _SHARES_INSTANT_TAGS, "shares"))
     for tag in _SHARES_DURATION_FALLBACK_TAGS:
-        entries = gaap.get(tag, {}).get("units", {}).get("shares", [])
-        series: dict[date, float] = {}
-        for entry in entries:
+        for entry in gaap.get(tag, {}).get("units", {}).get("shares", []):
             if entry.get("form") not in ("10-Q", "10-K"):
                 continue
-            series[date.fromisoformat(entry["end"])] = float(entry["val"])
-        if series:
-            return series
-    return {}
+            merged.setdefault(date.fromisoformat(entry["end"]), float(entry["val"]))
+    return merged
 
 
 def _nearest(series: dict[date, float], target: date) -> float | None:

@@ -141,6 +141,36 @@ def test_revenue_merges_across_the_asc606_tag_transition(tmp_path):
     assert len(rows) == 3
 
 
+def test_shares_merge_across_eras_not_first_source_wins(tmp_path):
+    """Share-count coverage differs by ERA, not just by firm. MongoDB reports
+    the DEI instant only from 2020 and weighted-average-basic only from 2021,
+    with 2016-2019 under the combined basic-and-diluted tag. Preferring one
+    source outright leaves years without share counts, and since the panel
+    requires shares those quarters are dropped despite having revenue."""
+    facts = {"cik": 5, "facts": {
+        "dei": {"EntityCommonStockSharesOutstanding": {"units": {"shares": [
+            {"end": "2024-04-30", "val": 90.0},          # recent era only
+        ]}}},
+        "us-gaap": {
+            "RevenueFromContractWithCustomerExcludingAssessedTax": {"units": {"USD": [
+                _entry("2018-02-01", "2018-04-30", 100.0),
+                _entry("2024-02-01", "2024-04-30", 400.0),
+            ]}},
+            # the pre-2020 tag: singular "Share", used when basic == diluted
+            "WeightedAverageNumberOfShareOutstandingBasicAndDiluted": {
+                "units": {"shares": [
+                    {"end": "2018-04-30", "val": 50.0, "form": "10-Q"},
+                    {"end": "2024-04-30", "val": 99.0, "form": "10-Q"},  # must not win
+                ]}},
+        },
+    }}
+    import json as _json
+    rows = fetch_fundamentals("0000000005", tmp_path, fetch=lambda url: _json.dumps(facts))
+    shares = {r.quarter_end: r.shares_outstanding for r in rows}
+    assert shares[date(2018, 4, 30)] == 50.0     # recovered from the era-specific tag
+    assert shares[date(2024, 4, 30)] == 90.0     # DEI instant keeps priority
+
+
 def test_companyfacts_cached_after_first_fetch(tmp_path):
     calls: list[str] = []
     fetch = _fake_fetch(calls)
