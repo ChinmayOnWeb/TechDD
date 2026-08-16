@@ -17,9 +17,18 @@ __pycache__/
 # findings (e.g. secrets in their git history); not for public disclosure.
 reports/
 
-# Panel-study per-run artifacts (rebuildable from cache; published dataset
-# committed deliberately once the universe is final).
-panel_cache/
+# Panel-study per-run artifacts.
+#
+# NOTE the exception below. panel_cache/ was excluded as "regenerable", but it
+# is NOT regenerable in this environment: EDGAR and the price vendors are
+# blocked by the network policy, so these payloads arrive by hand and the cache
+# is the ONLY copy. Excluding them meant every container rollback destroyed
+# them. They are public filings, small, and committing them makes the panel
+# reproducible by anyone -- which is what the study wants anyway.
+panel_cache/*
+!panel_cache/edgar_CIK*.json
+!panel_cache/stooq_*.csv
+!panel_cache/prices_delisted.csv
 panel.csv
 panel_results/
 
