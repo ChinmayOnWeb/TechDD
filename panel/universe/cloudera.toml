@@ -1,0 +1,10 @@
+name = "Cloudera, Inc."
+slug = "cloudera"
+ticker = "CLDR"
+cik = "0001535379"
+repos = ["https://github.com/apache/impala.git"]
+fiscal_year_end_month = 1
+listed_from = 2020-11-02
+listed_to = 2021-10-07
+tier = "adjacent"
+notes = "Listed Apr 2017; taken private Oct 2021 (final close 15.99 vs 16.00 deal). FYE Jan derived from 10-K periods. Foundation project: plurality test gives 84.1% Cloudera, 15.0% unattributable -- the clearest pass in the set. LIMITATION: available price history starts 2020-11-02, not the 2017 listing, so listed_from reflects PRICE coverage and the firm contributes ~4 quarters instead of ~18 until a wider export is obtained."

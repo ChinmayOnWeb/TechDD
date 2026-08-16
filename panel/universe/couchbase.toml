@@ -1,0 +1,10 @@
+name = "Couchbase, Inc."
+slug = "couchbase"
+ticker = "BASE"
+cik = "0001845022"
+repos = ["https://github.com/couchbase/kv_engine.git"]
+fiscal_year_end_month = 1
+listed_from = 2021-07-23
+listed_to = 2025-09-22
+tier = "core"
+notes = "IPO Jul 2021; taken private by Haveli, last trade 2025-09-22 (final close 24.50 = deal price exactly). FYE Jan derived from 10-K periods. kv_engine is the storage engine; Couchbase develops mainly on Gerrit, so GitHub history is a mirror of the same authorship. Attribution 65.4% firm, 29.2% unattributable."

@@ -105,6 +105,50 @@ def test_panel_build_skips_firm_without_clone(tmp_path):
     assert "skipping acme" in result.output
 
 
+def test_missing_fundamentals_skips_one_firm_not_the_run(tmp_path):
+    """EDGAR is unreachable from some environments, so a firm whose cached
+    fundamentals are absent must be skipped like one without a clone -- not
+    take every other firm's build down with it."""
+    universe = tmp_path / "universe"
+    universe.mkdir()
+    (universe / "acme.toml").write_text(ACME_TOML, encoding="utf-8")
+    (universe / "ghost.toml").write_text(
+        ACME_TOML.replace('slug = "acme"', 'slug = "ghost"')
+                 .replace('cik = "0000000001"', 'cik = "0009999999"')
+                 .replace('ticker = "ACME"', 'ticker = "GHST"'), encoding="utf-8")
+
+    clones = tmp_path / "clones"
+    for slug in ("acme", "ghost"):
+        repo = clones / slug
+        repo.mkdir(parents=True)
+        subprocess.run(["git", "init", "-b", "main", str(repo)],
+                       check=True, capture_output=True)
+        (repo / "a.py").write_text("A = 1\n", encoding="utf-8")
+        subprocess.run(["git", "-C", str(repo), "add", "a.py"],
+                       check=True, capture_output=True)
+        subprocess.run(
+            ["git", "-C", str(repo), "-c", "user.name=t", "-c", "user.email=t@example.com",
+             "commit", "-m", "init", "--date", "2023-02-01T10:00:00"],
+            check=True, capture_output=True)
+
+    cache = tmp_path / "cache"
+    cache.mkdir()
+    # only acme has cached fundamentals; ghost would need a network fetch
+    (cache / "edgar_CIK0000000001.json").write_text(json.dumps(_canned_edgar()),
+                                                    encoding="utf-8")
+    (cache / "stooq_acme.us.csv").write_text(STOOQ_CSV, encoding="utf-8")
+
+    output = tmp_path / "panel.csv"
+    result = runner.invoke(app, [
+        "panel", "build", "--universe", str(universe), "--clones", str(clones),
+        "--cache", str(cache), "-o", str(output),
+    ])
+    assert result.exit_code == 0, result.output
+    assert "no fundamentals for ghost" in result.output
+    import pandas as pd
+    assert set(pd.read_csv(output)["firm"]) == {"acme"}   # acme still built
+
+
 def test_panel_regress_writes_result_tables(tmp_path):
     import numpy as np
     import pandas as pd

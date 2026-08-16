@@ -1,0 +1,10 @@
+name = "HashiCorp, Inc."
+slug = "hashicorp"
+ticker = "HCP"
+cik = "0001720671"
+repos = ["https://github.com/hashicorp/terraform.git"]
+fiscal_year_end_month = 1
+listed_from = 2021-12-10
+listed_to = 2025-02-26
+tier = "core"
+notes = "IPO Dec 2021; acquired by IBM, last trade 2025-02-26 (final close 34.78 vs 35.00 deal). FYE Jan derived from 10-K periods. Firm-owned repo, so the plurality rule does not apply; measured firm share is 22.5% with 58.9% unattributable, which is normal for a widely-contributed OSS product. CAUTION: ticker HCP was also Healthpeak (a REIT) -- verify entity, not ticker."

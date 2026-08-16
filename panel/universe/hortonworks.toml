@@ -1,0 +1,10 @@
+name = "Hortonworks, Inc."
+slug = "hortonworks"
+ticker = "HDP"
+cik = "0001610532"
+repos = ["https://github.com/apache/ambari.git"]
+fiscal_year_end_month = 12
+listed_from = 2014-12-15
+listed_to = 2019-01-02
+tier = "adjacent"
+notes = "IPO Dec 2014; merged into Cloudera Jan 2019. FYE Dec. Foundation project: plurality test gives 61.2% Hortonworks, 35.1% unattributable. Revenue splits across the ASC 606 tag boundary (SalesRevenueNet pre-2018), recovered by the merged duration series."

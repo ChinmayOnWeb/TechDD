@@ -61,9 +61,19 @@ def build(
         quarter_ends = fiscal_quarter_ends(
             firm.fiscal_year_end_month, firm.listed_from, firm.listed_to or date.today())
         typer.echo(f"{firm.slug}: {len(quarter_ends)} fiscal quarters")
+        try:
+            fundamentals = fetch_fundamentals(firm.cik, cache)
+        except Exception as exc:
+            # A firm whose fundamentals are unavailable is skipped like one
+            # without a clone, rather than ending the run. EDGAR is unreachable
+            # from some environments, so the cache is the normal source and a
+            # missing entry must not cost every other firm its build.
+            typer.echo(f"warning: no fundamentals for {firm.slug} "
+                       f"(CIK {firm.cik}): {type(exc).__name__}; skipping", err=True)
+            continue
         metrics_by_slug[firm.slug] = load_or_compute_metrics(
             firm.slug, clone, quarter_ends, cache)
-        fundamentals_by_slug[firm.slug] = fetch_fundamentals(firm.cik, cache)
+        fundamentals_by_slug[firm.slug] = fundamentals
         series = crsp_prices.get(firm.ticker.upper())
         if series:
             prices_by_slug[firm.slug] = quarter_end_prices_from_series(series, quarter_ends)
