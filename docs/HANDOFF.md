@@ -10,8 +10,8 @@ which **supersedes** the original 2026-07-06 panel spec:
 
 | part | question | status |
 |---|---|---|
-| **C** | Does repo health predict a project's own outcomes? | **Data collection complete.** Estimation not started. |
-| **A** | Do public markets price it? | Pipeline complete; universe partially built. |
+| **C** | Does repo health predict a project's own outcomes? | **ANSWERED.** See `docs/cohort-hazard-results.md`. |
+| **A** | Do public markets price it? | 3 firms live (76 firm-quarters); 4 more attributed and configured, blocked only on re-supplying their EDGAR JSONs. |
 | **B** | Do acquirers price it? | Not started. |
 
 The order matters and is not cosmetic: without C, a null in A cannot distinguish
@@ -38,7 +38,15 @@ degenerate), **activity must be a control** (`commit_volume` predicts dormancy
 near-tautologically), and results must be **stratified by solo /
 multi-contributor** (~40% of the population is single-author).
 
-## Part A — blocked on repo attribution, not code
+## Part A — attribution DONE; blocked only on data
+
+Universe is now 7 firms. Cloudera, Couchbase, Hortonworks and HashiCorp have
+TOMLs written and clones in place; they build the moment their EDGAR
+`companyfacts` JSONs are re-supplied to `panel_cache/edgar_CIK<cik>.json`.
+Confluent is excluded by the attribution rule — see
+`docs/decision-repo-attribution.md`.
+
+### Superseded section below (attribution now measured)
 
 Working: 3 firms (GitLab, MongoDB, Elastic) → 68 firm-quarters.
 
