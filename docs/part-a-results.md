@@ -26,13 +26,14 @@ either the pricing or the predictive specification.**
 
 | Model | Outcome | beta | asymptotic p | **bootstrap p** |
 |---|---|---|---|---|
-| H1 | log(EV/Rev) | -0.027 | 0.862 | **0.882** |
-| H2 k=1 | growth t+1 | -0.048 | **0.000** | **0.235** |
-| H2 k=2 | growth t+2 | -0.074 | **0.000** | **0.118** |
-| H2 k=3 | growth t+3 | -0.075 | 0.000 | **0.235** |
-| H2 k=4 | growth t+4 | -0.062 | 0.010 | **0.333** |
+| H1 | log(EV/Rev) | -0.027 | 0.862 | **0.919** |
+| H2 k=1 | growth t+1 | -0.048 | **0.000** | **0.115** |
+| H2 k=2 | growth t+2 | -0.074 | **0.000** | **0.090** |
+| H2 k=3 | growth t+3 | -0.075 | 0.000 | **0.176** |
+| H2 k=4 | growth t+4 | -0.062 | 0.010 | **0.151** |
 
-The bootstrap column is the headline, as the study design pre-specified.
+The bootstrap column is the headline, as the study design pre-specified: 9,999
+replications, Webb six-point weights, restricted residuals, firm clusters.
 
 ## The asymptotic standard errors are not merely imprecise -- they are wrong
 
@@ -41,7 +42,7 @@ This is the result most worth carrying into the paper.
 On H2 the asymptotic cluster-robust standard errors report t = -7.94 and
 p < 0.001: a strongly significant *negative* predictive effect of repo health on
 forward revenue growth. That result is an artifact. The wild cluster bootstrap
-puts the same coefficient at p = 0.235.
+puts the same coefficient at p = 0.115.
 
 The cause is the cluster count. Cluster-robust standard errors are justified as
 the number of clusters grows; here there are five. The sandwich estimator's rank
@@ -53,11 +54,72 @@ bootstrap as the headline test rather than a robustness footnote.
 Had the bootstrap not been implemented, this panel would have reported a
 significant, counterintuitively signed finding at p < 0.001.
 
-**A discreteness limit belongs beside every p-value here.** With G clusters the
-bootstrap enumerates 2^(G-1) sign vectors, so the smallest p it can return is
-1/(2^(G-1)+1): 0.059 at five clusters, 0.111 at four. Significance at the 1%
-level is unreachable by construction, whatever the true effect. This is a
-property of the design, not of the estimates.
+### The weight distribution had to change, or the test could never reject
+
+The first implementation used Rademacher (two-point) weights and enumerated all
+sign vectors exactly. That is defensible at moderate cluster counts and wrong
+here. Rademacher weights admit only 2^G distinct draws, and the t-statistic is
+symmetric under flipping all of them, so at five clusters just 16 usable draws
+remain and the smallest attainable p-value is 1/17 = 0.059.
+
+**A 5% test built on those weights has exactly zero power against any effect of
+any size.** It cannot reject, ever. That is a property of the weight
+distribution, not of the data, and it would have made the reported null
+meaningless.
+
+Webb's six-point distribution -- +/-sqrt(1/2), +/-1, +/-sqrt(3/2), each with
+probability 1/6 -- gives 6^G draws (7,776 at G = 5) and a floor of 1/(B+1) =
+0.0001 at 9,999 replications. Webb (2023) and Stata's `wildbootstrap` both
+switch to it at G <= 12, which is the rule now implemented.
+
+The square roots matter and are easy to get wrong: informal summaries often
+quote the points as +/-0.5, +/-1, +/-1.5, which gives E[w^2] = 7/6 rather than
+1 and is not a valid wild bootstrap weight distribution. A test asserts the
+moments.
+
+With the corrected weights the null stands on its own terms rather than being
+forced by granularity: every p-value remains above 0.09.
+
+## Minimum detectable effect: the null is uninformative
+
+Simulated against the actual H1 design (75 firm-quarters, 5 clusters, the real
+collinearity structure), running the same pre-specified bootstrap, 400
+replicates per point:
+
+| true beta | power |
+|---|---|
+| 0.05 | 1.2% |
+| 0.10 | 2.5% |
+| 0.20 | 4.5% |
+| 0.50 | 14.2% |
+| 1.00 | 61.8% |
+| 1.25 | 76.2% |
+| **1.50** | **86.8%** |
+| 2.00 | 95.0% |
+
+**MDE at 80% power, alpha = 0.05: beta ~ 1.4.**
+
+Read that against the outcome's scale. `log_ev_rev` has a standard deviation of
+0.637 in this sample, and the index is z-scored. A detectable effect therefore
+requires a one-standard-deviation improvement in repo health to move the
+revenue multiple by a factor of e^1.4, roughly **4x** -- and to do so net of
+firm and period fixed effects, growth, margin and size.
+
+No plausible mechanism produces that. Against effects of the size actually
+estimated (beta = -0.027), the design has **1-2% power**.
+
+So the correct reading of Part A is not "repo health does not predict value."
+It is: **this panel cannot distinguish any realistic effect from zero.** The
+null is a statement about the design, not about the world. Reporting it as
+evidence of absence would be wrong.
+
+This is why the small-N concern raised early in the project was well founded,
+and why Part C -- 3,798 repositories, 41,596 repository-quarters -- carries the
+empirical weight. Part A is best framed as a demonstration of the measurement
+pipeline on audited firm data, with its power limits stated, rather than as a
+test of the hypothesis.
+
+Reproduce with `gitdd panel power panel.csv`.
 
 ## What the controls say
 
@@ -118,10 +180,10 @@ gap.
 ## Honest reading
 
 At five clusters this panel cannot support a headline claim in either
-direction. The correct statement is that **the pre-specified test finds no
-evidence that repo health is priced or predictive, and the design lacks the
-power to rule out effects of the size that would matter.** The minimum
-detectable effect should be stated explicitly before this is written up.
+direction. The pre-specified test finds no evidence that repo health is priced
+or predictive, and -- per the MDE above -- it could only ever have detected
+effects roughly fifty times larger than the one estimated. That is a null with
+no evidential content.
 
 This converges with Part C, which found repo health largely reduces to
 contributor headcount. Two independent designs, neither supporting an
@@ -133,7 +195,6 @@ incremental signal beyond what headcount and standard financials already carry.
   obtained.
 - Confluent remains excluded by the attribution rule (21.8% firm share, 65.6%
   unattributable); see `decision-repo-attribution.md`.
-- Minimum detectable effect not yet computed.
 - Look-ahead in the dependent variable (quarter-end price against LTM revenue
   not public until the 10-Q files) is still unaddressed; the design doc requires
   choosing one lag convention and applying it mechanically.

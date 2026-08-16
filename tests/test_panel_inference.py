@@ -96,19 +96,44 @@ def _panel(n_firms=5, n_periods=8, effect=0.0, seed=0):
     return frame
 
 
-def test_bootstrap_enumerates_exactly_and_reports_the_p_value_floor():
-    """With few clusters the test enumerates all 2^(G-1) sign vectors rather
-    than sampling, and the smallest p it can return is bounded by that count."""
+def test_webb_weights_have_the_moments_a_wild_bootstrap_requires():
+    """Webb's six points are +/-sqrt(1/2), +/-1, +/-sqrt(3/2). The square roots
+    matter: they give E[w] = 0 and E[w^2] = 1. The rounded values (+/-0.5, +/-1,
+    +/-1.5) seen in informal summaries give E[w^2] = 7/6 and would not be a
+    valid weight distribution."""
+    import numpy as np
+
+    from git_due_diligence.panel.regress import _WEBB_POINTS
+
+    points = np.array(_WEBB_POINTS)
+    assert len(points) == 6
+    assert np.mean(points) == pytest.approx(0.0)
+    assert np.mean(points ** 2) == pytest.approx(1.0)
+
+
+def test_few_clusters_use_webb_weights_to_escape_the_rademacher_floor():
+    """Rademacher weights admit only 2^G draws, so at 5 clusters the smallest
+    attainable p-value is 1/17 = 0.059 and a 5% test has zero power against ANY
+    effect. Webb weights give 6^G draws and restore a usable p-value grid."""
     data = add_calendar_period(_panel(n_firms=5))
     result = wild_cluster_pvalue(
         "log_ev_rev ~ repo_health_index_z + growth_yoy + op_margin_ltm + log_rev "
         "+ C(firm) + C(period)",
-        data, "repo_health_index_z", data["firm"])
-    assert result["exact_enumeration"] is True
+        data, "repo_health_index_z", data["firm"], draws=499)
+    assert result["weights"] == "webb"
     assert result["n_clusters"] == 5
-    assert result["replications"] == 2 ** 4      # first cluster's sign fixed
-    assert result["min_attainable_p"] == pytest.approx(1 / 17)
+    # The floor is now far below 5%, where Rademacher would have pinned it above.
+    assert result["min_attainable_p"] < 0.05
     assert 0.0 < result["p_value"] <= 1.0
+
+
+def test_many_clusters_fall_back_to_rademacher():
+    data = add_calendar_period(_panel(n_firms=14, n_periods=4))
+    result = wild_cluster_pvalue(
+        "log_ev_rev ~ repo_health_index_z + growth_yoy + op_margin_ltm + log_rev "
+        "+ C(firm) + C(period)",
+        data, "repo_health_index_z", data["firm"], draws=99)
+    assert result["weights"] == "rademacher"
 
 
 def test_bootstrap_separates_a_real_effect_from_no_effect():
@@ -117,16 +142,12 @@ def test_bootstrap_separates_a_real_effect_from_no_effect():
     an inverted sign or a mis-imposed null would break it."""
     formula = ("log_ev_rev ~ repo_health_index_z + growth_yoy + op_margin_ltm "
                "+ log_rev + C(firm) + C(period)")
-    # Eight clusters, so the enumeration floor is 1/129 and a 0.05 threshold
-    # sits well above it. At six clusters the attainable p-values are multiples
-    # of 1/33 and the smallest is 0.030, which would make the assertion a test
-    # of the discreteness floor rather than of the effect.
-    null = add_calendar_period(_panel(n_firms=8, n_periods=10, effect=0.0, seed=1))
-    strong = add_calendar_period(_panel(n_firms=8, n_periods=10, effect=3.0, seed=1))
+    null = add_calendar_period(_panel(n_firms=6, n_periods=10, effect=0.0, seed=1))
+    strong = add_calendar_period(_panel(n_firms=6, n_periods=10, effect=3.0, seed=1))
     p_null = wild_cluster_pvalue(formula, null, "repo_health_index_z",
-                                 null["firm"])["p_value"]
+                                 null["firm"], draws=499)["p_value"]
     p_strong = wild_cluster_pvalue(formula, strong, "repo_health_index_z",
-                                   strong["firm"])["p_value"]
+                                   strong["firm"], draws=499)["p_value"]
     assert p_strong < p_null
     assert p_strong <= 0.05
 

@@ -87,6 +87,53 @@ def build(
 
 
 @panel_app.command()
+def power(
+    panel_csv: Path = typer.Argument(..., exists=True, dir_okay=False),
+    outcome: str = typer.Option("log_ev_rev", "--outcome",
+                                help="Dependent variable to compute power for"),
+    replicates: int = typer.Option(400, "--replicates"),
+    draws: int = typer.Option(499, "--draws", help="Bootstrap draws per replicate"),
+    output: Path = typer.Option(None, "--output", "-o",
+                                help="Optional CSV to write the power curve to"),
+) -> None:
+    """Simulate the power of the pre-specified bootstrap test and report the
+    minimum detectable effect.
+
+    A null is uninterpretable without this: it matters enormously whether the
+    design could have detected a coefficient of 0.05 or only one of 1.5."""
+    _require_panel_extra()
+    import pandas as pd
+
+    from git_due_diligence.panel.power import power_curve
+    from git_due_diligence.panel.regress import add_calendar_period, drop_singletons
+
+    index_col = "repo_health_index_z"
+    controls = ["growth_yoy", "op_margin_ltm", "log_rev"]
+    panel = add_calendar_period(pd.read_csv(panel_csv))
+    data = panel.dropna(subset=[outcome, index_col, *controls])
+    data, _ = drop_singletons(data)
+    formula = (f"{outcome} ~ {index_col} + " + " + ".join(controls)
+               + " + C(firm) + C(period)")
+
+    result = power_curve(data, formula, index_col,
+                         replicates=replicates, draws=draws)
+    typer.echo(f"{result.n_observations} firm-quarters, {result.n_clusters} clusters, "
+               f"sd({outcome}) = {result.outcome_sd:.3f}")
+    for point in result.curve:
+        typer.echo(f"  beta={point.effect:5.2f}  power={point.power:6.1%}")
+    if result.mde is None:
+        typer.echo(f"\nMDE: no tested effect reaches {result.target_power:.0%} power.")
+    else:
+        typer.echo(f"\nMinimum detectable effect at {result.target_power:.0%} power, "
+                   f"alpha={result.alpha}: beta = {result.mde}")
+        typer.echo(f"  i.e. a 1 SD move in the index must shift {outcome} by "
+                   f"{result.mde} to be detectable at all.")
+    if output:
+        result.as_frame().to_csv(output, index=False)
+        typer.echo(f"Wrote power curve to {output}")
+
+
+@panel_app.command()
 def regress(
     panel_csv: Path = typer.Argument(..., exists=True, dir_okay=False),
     output_dir: Path = typer.Option(Path("panel_results"), "--output", "-o"),
@@ -121,14 +168,11 @@ def regress(
             typer.echo(
                 f"  {row.model:<8} beta={row.coefficient:+.4f} "
                 f"t={row.t_observed:+.3f} p={row.p_value:.4f} "
-                f"({row.replications} refits, "
-                f"{'exact' if row.exact_enumeration else 'sampled'})")
-        worst = bootstrap.loc[bootstrap["min_attainable_p"].idxmax()]
+                f"({row.replications} refits, {row.weights} weights)")
         typer.echo(
-            f"  NOTE: cluster counts run {int(bootstrap['n_clusters'].min())}-"
-            f"{int(bootstrap['n_clusters'].max())}; at the smallest "
-            f"({int(worst['n_clusters'])}, model {worst['model']}) the lowest "
-            f"attainable p-value is {worst['min_attainable_p']:.3f}. "
-            f"Significance at 1% is unreachable by construction. Asymptotic "
-            f"cluster-robust SEs in the tables are unreliable at this count.")
+            f"  NOTE: {int(bootstrap['n_clusters'].min())}-"
+            f"{int(bootstrap['n_clusters'].max())} clusters; lowest attainable "
+            f"p-value {bootstrap['min_attainable_p'].max():.4f}. Asymptotic "
+            f"cluster-robust SEs in the tables are unreliable at this cluster "
+            f"count and are reported only for comparison.")
     typer.echo(f"\nWrote {len(results)} summary tables to {output_dir}")

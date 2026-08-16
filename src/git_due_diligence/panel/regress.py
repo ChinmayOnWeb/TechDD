@@ -120,10 +120,19 @@ def _rank_check(fit, label: str) -> None:
             f"time dummies because no other firm is observed in those periods.")
 
 
-# Cluster counts at or below this get an EXACT test by enumerating all 2^G sign
-# vectors instead of sampling them. With a handful of firms that is a few dozen
-# refits -- cheaper than a sampled bootstrap and free of simulation error.
-_EXACT_ENUMERATION_MAX_CLUSTERS = 14
+# Webb's six-point weight distribution: +/-sqrt(1/2), +/-1, +/-sqrt(3/2), each
+# with probability 1/6. The square roots are not decoration -- they make
+# E[w] = 0 and E[w^2] = (0.5 + 1 + 1.5) * 2/6 = 1, which the weights must
+# satisfy. The rounded values (+/-0.5, +/-1, +/-1.5) that circulate in informal
+# summaries give E[w^2] = 7/6 and are not a valid wild bootstrap weight
+# distribution.
+_WEBB_POINTS = (-(1.5 ** 0.5), -1.0, -(0.5 ** 0.5), 0.5 ** 0.5, 1.0, 1.5 ** 0.5)
+
+# Below this cluster count, Rademacher weights are too coarse and Webb weights
+# are used instead. Webb (2023), 'Reworking wild bootstrap-based inference for
+# clustered errors', Canadian Journal of Economics; the same threshold Stata's
+# `wildbootstrap` applies (Webb at G <= 12, Rademacher at G >= 13).
+_WEBB_MAX_CLUSTERS = 12
 _DEFAULT_DRAWS = 9999
 
 
@@ -135,8 +144,17 @@ def wild_cluster_pvalue(model_formula: str, data, param: str, groups,
     Inference with Clustered Errors', ReStat 90(3). Uses the RESTRICTED (WCR)
     variant -- residuals are taken from the model with the null imposed -- which
     that literature finds better-behaved with few clusters than the unrestricted
-    form, and Rademacher weights, which are the recommended default when the
-    cluster count is small enough to enumerate.
+    form.
+
+    WEIGHTS: Webb's six-point distribution at 12 or fewer clusters, Rademacher
+    above. This choice is not cosmetic at this panel's size. Rademacher weights
+    are two-point, so with G clusters they admit only 2^G distinct draws, and
+    the statistic is symmetric under flipping all of them -- at G = 5 that
+    leaves 16 usable draws and a smallest attainable p-value of 1/17 = 0.059.
+    A 5% test would then have ZERO power against any effect whatsoever, which is
+    a property of the weight distribution rather than of the data. Webb's six
+    points give 6^G draws (7,776 at G = 5), restoring a usable p-value grid.
+    Webb (2023) and Stata's `wildbootstrap` both switch at G <= 12.
 
     Why this is the headline test rather than a footnote: asymptotic
     cluster-robust standard errors are justified as the number of clusters grows,
@@ -145,14 +163,8 @@ def wild_cluster_pvalue(model_formula: str, data, param: str, groups,
     reject far too often. The bootstrap re-derives the null distribution of the
     t-statistic from the data instead of assuming it.
 
-    HARD LIMIT worth reporting alongside any p-value from this function: with G
-    clusters there are only 2^G sign vectors, and the statistic is symmetric
-    under flipping all of them, so the smallest attainable p-value is about
-    2/2^G. At G=6 that is ~0.031 -- no result can be significant at the 1% level
-    no matter how large the effect. That is a property of the design, not of the
-    estimate, and the returned `min_attainable_p` states it explicitly."""
-    import itertools
-
+    The returned `min_attainable_p` states the resulting floor explicitly, so a
+    null can be read against what the procedure could ever have detected."""
     import numpy as np
     import pandas as pd
     import statsmodels.formula.api as smf
@@ -178,17 +190,10 @@ def wild_cluster_pvalue(model_formula: str, data, param: str, groups,
     resid = np.asarray(restricted.resid, dtype=float)
     outcome = model_formula.split("~", 1)[0].strip()
 
-    if n_clusters <= _EXACT_ENUMERATION_MAX_CLUSTERS:
-        # Fix the first cluster's sign at +1: the t-statistic is invariant to
-        # flipping every weight, so the other half of the 2^G vectors is an
-        # exact mirror and contributes nothing.
-        sign_vectors = [(1,) + rest for rest in
-                        itertools.product((1, -1), repeat=n_clusters - 1)]
-        exact = True
-    else:
-        rng = np.random.default_rng(seed)
-        sign_vectors = rng.choice((-1, 1), size=(draws, n_clusters))
-        exact = False
+    rng = np.random.default_rng(seed)
+    webb = n_clusters <= _WEBB_MAX_CLUSTERS
+    points = _WEBB_POINTS if webb else (-1.0, 1.0)
+    sign_vectors = rng.choice(points, size=(draws, n_clusters))
 
     boot = pd.DataFrame(data)
     t_stats: list[float] = []
@@ -218,12 +223,11 @@ def wild_cluster_pvalue(model_formula: str, data, param: str, groups,
         "p_value": p_value,
         "n_clusters": n_clusters,
         "replications": len(t_array),
-        "exact_enumeration": exact,
+        "weights": "webb" if webb else "rademacher",
         # The smallest p this procedure can return, given the +1 correction:
         # every replication would have to fall below the observed statistic.
-        # Under exact enumeration the refit count is 2^(G-1), so with 5 clusters
-        # the floor is 1/17 ~ 0.059 -- a 1% result is unreachable by
-        # construction, however large the true effect.
+        # Report it beside the p-value so a null can be read against what the
+        # test could ever have detected.
         "min_attainable_p": 1.0 / (len(t_array) + 1) if len(t_array) else float("nan"),
     }
 
