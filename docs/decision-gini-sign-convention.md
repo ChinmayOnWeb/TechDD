@@ -12,6 +12,17 @@ either sign.** Report it standalone, with both directions and the evidence below
 > retained below, because it explains part of the pattern; it just is not
 > sufficient. The reasoning is left visible rather than rewritten, since the
 > sequence is the justification for the final position.
+>
+> **Second revision (hazard model).** The "ownership mechanism" proposed below
+> as the substantive explanation is **not supported** by the estimated hazard
+> model. Concentration terms there are specification-unstable in the manner
+> collinearity produces — `top_author_share` flips from 0.704 to 1.474 when the
+> contributor term is dropped — and adding Gini to a model already containing
+> contributor count yields a hazard ratio of 15.19 with CI [2.27, 101.6]. The
+> parsimonious reading is that contributor count carries the signal and
+> concentration measures inherit fragments of it. **The decision below is
+> unchanged and better supported**; only the proposed mechanism is withdrawn.
+> See `docs/cohort-hazard-results.md`.
 
 ## The question
 
