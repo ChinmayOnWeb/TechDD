@@ -26,11 +26,11 @@ either the pricing or the predictive specification.**
 
 | Model | Outcome | beta | asymptotic p | **bootstrap p** |
 |---|---|---|---|---|
-| H1 | log(EV/Rev) | -0.027 | 0.862 | **0.919** |
+| H1 | log(EV/Rev) | -0.027 | 0.862 | **0.918** |
 | H2 k=1 | growth t+1 | -0.048 | **0.000** | **0.115** |
 | H2 k=2 | growth t+2 | -0.074 | **0.000** | **0.090** |
 | H2 k=3 | growth t+3 | -0.075 | 0.000 | **0.176** |
-| H2 k=4 | growth t+4 | -0.062 | 0.010 | **0.151** |
+| H2 k=4 | growth t+4 | -0.062 | 0.010 | **0.150** |
 
 The bootstrap column is the headline, as the study design pre-specified: 9,999
 replications, Webb six-point weights, restricted residuals, firm clusters.

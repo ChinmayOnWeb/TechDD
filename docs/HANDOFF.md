@@ -1,7 +1,12 @@
 # Handoff — repo-health research pipeline
 
-State as of 2026-08-13. Everything below is committed on
-`claude/session-planning-40wqkl` and pushed. 233 tests green.
+State as of 2026-08-16. Everything below is committed on
+`claude/session-planning-40wqkl` and pushed. 269 tests green.
+
+**Part A now runs end to end and is estimated.** See `docs/part-a-results.md`
+for results, and read the minimum-detectable-effect section before quoting any
+Part A number: the design has 1-2% power against realistic effects, so its null
+is a statement about the design rather than about the world.
 
 ## Where the study stands
 
@@ -11,7 +16,7 @@ which **supersedes** the original 2026-07-06 panel spec:
 | part | question | status |
 |---|---|---|
 | **C** | Does repo health predict a project's own outcomes? | **ANSWERED.** See `docs/cohort-hazard-results.md`. |
-| **A** | Do public markets price it? | 3 firms live (76 firm-quarters); 4 more attributed and configured, blocked only on re-supplying their EDGAR JSONs. |
+| **A** | Do public markets price it? | **ESTIMATED.** 6 firms build (112 firm-quarters), 5 identify H1 (75). No detectable effect -- but underpowered by ~50x. See `docs/part-a-results.md`. |
 | **B** | Do acquirers price it? | Not started. |
 
 The order matters and is not cosmetic: without C, a null in A cannot distinguish
@@ -38,13 +43,40 @@ degenerate), **activity must be a control** (`commit_volume` predicts dormancy
 near-tautologically), and results must be **stratified by solo /
 multi-contributor** (~40% of the population is single-author).
 
-## Part A — attribution DONE; blocked only on data
+## Part A — estimated
 
-Universe is now 7 firms. Cloudera, Couchbase, Hortonworks and HashiCorp have
-TOMLs written and clones in place; they build the moment their EDGAR
-`companyfacts` JSONs are re-supplied to `panel_cache/edgar_CIK<cik>.json`.
-Confluent is excluded by the attribution rule — see
-`docs/decision-repo-attribution.md`.
+All EDGAR payloads are now **committed** under `panel_cache/`, along with the
+price exports. They are no longer re-suppliable by hand (EDGAR and the price
+vendors are blocked by the network policy), so `panel_cache/*.json` and the
+price CSVs are tracked in git deliberately — see the note in `.gitignore`.
+Losing them again would cost another manual fetch.
+
+Universe is 7 firms; Confluent is excluded by the attribution rule
+(`docs/decision-repo-attribution.md`). Of the remainder:
+
+- **Estimating (5):** Couchbase, Elastic, GitLab, HashiCorp, MongoDB.
+- **Builds but absorbed (1):** Hortonworks. It delisted 2018Q3, before MongoDB
+  opens 2019Q2, so it overlaps no other firm and every observation is a
+  singleton under two-way fixed effects. Dropped per Correia (2015); this does
+  not move any coefficient.
+- **Too short (1):** Cloudera, 3 fiscal quarters. Its price export starts
+  2020-11 against a 2017 listing, so it cannot form LTM revenue. A wider export
+  is the only fix.
+
+Rebuild and estimate:
+
+```
+gitdd panel build --universe panel/universe --clones /home/user/clones \
+    --cache panel_cache --crsp panel_cache/prices_delisted.csv -o panel.csv
+gitdd panel regress panel.csv -o panel_results
+gitdd panel power   panel.csv          # minimum detectable effect
+```
+
+Three estimation defects were found and fixed while doing this, all latent until
+the universe widened past the January-fiscal-year firms: time fixed effects keyed
+to per-firm fiscal calendars (rank-deficient design, coefficients of ~1.3e10
+reported as results), singletons retained, and no bootstrap. Details in
+`docs/part-a-results.md`.
 
 ### Superseded section below (attribution now measured)
 
@@ -66,8 +98,12 @@ already specifies:
 Known gap: the CLDR price export covers only 2020-11 → 2021-10, though Cloudera
 listed in 2017. Re-export wider or accept ~4 quarters instead of ~18.
 
-Inference note: at ~10–15 firms, **wild-cluster bootstrap** p-values are the
-headline, not asymptotic clustered SEs. Not yet implemented.
+Inference note: at this firm count, **wild-cluster bootstrap** p-values are the
+headline, not asymptotic clustered SEs. **Now implemented** (`regress.py`), with
+Webb six-point weights below 13 clusters — Rademacher weights are too coarse
+there and would pin the smallest attainable p-value above 0.05, giving a 5% test
+zero power against any effect. This is not a footnote: the asymptotic SEs report
+p < 0.001 for an H2 coefficient the bootstrap puts at p = 0.115.
 
 ## Decisions already frozen (do not silently revisit)
 
@@ -78,6 +114,10 @@ headline, not asymptotic clustered SEs. Not yet implemented.
 | Count components log1p-transformed before z-scoring | `assemble.py` |
 | No minimum-follow-up or minimum-commit exclusion | `docs/cohort-exclusions.md` |
 | PyPI primary / npm robustness; frames never pooled | `docs/cohort-exclusions.md` |
+| Time FE on the calendar quarter of the fiscal-quarter midpoint | `regress.py` |
+| Singletons dropped iteratively before clustering (Correia 2015) | `regress.py` |
+| Webb weights at <= 12 clusters, Rademacher above (Webb 2023) | `regress.py` |
+| Confluent excluded from the universe by the attribution rule | `docs/decision-repo-attribution.md` |
 
 **Pre-registration is stage 0 of the plan and has not been done.** Freeze
 definitions at a pinned commit before estimating anything. The pilot showed

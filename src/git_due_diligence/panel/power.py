@@ -53,8 +53,12 @@ class PowerResult:
         return pd.DataFrame([{"effect": p.effect, "power": p.power} for p in self.curve])
 
 
-def _design(panel, formula: str, param: str, cluster_col: str = "firm"):
-    """Return (y, X, param column index, cluster codes) for `formula`."""
+def _design(panel, formula: str, param: str, cluster_col: str | None = "firm",
+            codes=None):
+    """Return (y, X, param column index, cluster codes) for `formula`.
+
+    Pass `codes` when the caller has already factorised the clusters, so both
+    the statsmodels and closed-form paths group identically."""
     import numpy as np
     import pandas as pd
     import patsy
@@ -62,7 +66,8 @@ def _design(panel, formula: str, param: str, cluster_col: str = "firm"):
     y, X = patsy.dmatrices(formula, panel, return_type="dataframe")
     if param not in X.columns:
         raise ValueError(f"{param} not present in the design matrix")
-    codes, _ = pd.factorize(panel[cluster_col])
+    if codes is None:
+        codes, _ = pd.factorize(panel[cluster_col])
     return (np.asarray(y).ravel(), np.asarray(X, dtype=float),
             list(X.columns).index(param), np.asarray(codes))
 

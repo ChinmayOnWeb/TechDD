@@ -164,57 +164,52 @@ def wild_cluster_pvalue(model_formula: str, data, param: str, groups,
     t-statistic from the data instead of assuming it.
 
     The returned `min_attainable_p` states the resulting floor explicitly, so a
-    null can be read against what the procedure could ever have detected."""
+    null can be read against what the procedure could ever have detected.
+
+    The resampling itself runs in closed form rather than through repeated
+    formula fits: at 9,999 draws per model the statsmodels path costs minutes
+    per hypothesis, and the design matrix never changes between draws -- only
+    the outcome does. `panel/power.py` holds the vectorised kernel, and
+    `test_panel_power.py` asserts it reproduces the statsmodels p-value and
+    differs in t only by the finite-sample correction, which cancels in the
+    bootstrap ratio."""
     import numpy as np
     import pandas as pd
     import statsmodels.formula.api as smf
+
+    from git_due_diligence.panel.power import _bootstrap_p, _design
 
     groups = pd.Series(groups).reset_index(drop=True)
     data = data.reset_index(drop=True)
     codes, _ = pd.factorize(groups)
     n_clusters = int(codes.max()) + 1
 
-    def _fit(frame, formula):
-        return smf.ols(formula, data=frame).fit(
-            cov_type="cluster", cov_kwds={"groups": groups})
-
-    unrestricted = _fit(data, model_formula)
+    # One statsmodels fit, for the reported coefficient and standard error --
+    # these are what appear in the summary tables, so they carry the same
+    # finite-sample correction as the rest of the table.
+    unrestricted = smf.ols(model_formula, data=data).fit(
+        cov_type="cluster", cov_kwds={"groups": groups})
     beta = float(unrestricted.params[param])
     se = float(unrestricted.bse[param])
     t_observed = beta / se if se > 0 and np.isfinite(se) else np.nan
 
-    # Impose the null by dropping the regressor, then resample its residuals.
-    restricted_formula = _drop_term(model_formula, param)
-    restricted = smf.ols(restricted_formula, data=data).fit()
-    fitted = np.asarray(restricted.fittedvalues, dtype=float)
-    resid = np.asarray(restricted.resid, dtype=float)
-    outcome = model_formula.split("~", 1)[0].strip()
-
-    rng = np.random.default_rng(seed)
     webb = n_clusters <= _WEBB_MAX_CLUSTERS
-    points = _WEBB_POINTS if webb else (-1.0, 1.0)
-    sign_vectors = rng.choice(points, size=(draws, n_clusters))
+    points = np.array(_WEBB_POINTS if webb else (-1.0, 1.0))
 
-    boot = pd.DataFrame(data)
-    t_stats: list[float] = []
-    for signs in sign_vectors:
-        weights = np.asarray(signs, dtype=float)[codes]
-        boot[outcome] = fitted + weights * resid
-        try:
-            fit_b = _fit(boot, model_formula)
-            se_b = float(fit_b.bse[param])
-            if se_b > 0 and np.isfinite(se_b):
-                t_stats.append(float(fit_b.params[param]) / se_b)
-        except Exception:
-            continue
+    y, X, param_index, _ = _design(data, model_formula, param, cluster_col=None,
+                                   codes=codes)
+    gram_inverse = np.linalg.pinv(X.T @ X)
+    projector = gram_inverse @ X.T
+    leverage = X @ gram_inverse[:, param_index]
+    _, restricted_X, _, _ = _design(
+        data, _drop_term(model_formula, param), "Intercept",
+        cluster_col=None, codes=codes)
+    restricted_projector = np.linalg.pinv(restricted_X.T @ restricted_X) @ restricted_X.T
 
-    t_array = np.abs(np.asarray(t_stats, dtype=float))
-    if not len(t_array) or not np.isfinite(t_observed):
-        p_value = float("nan")
-    else:
-        # +1 in numerator and denominator: the observed sample is itself one
-        # draw under the null, and omitting it yields p-values that can be 0.
-        p_value = float((np.sum(t_array >= abs(t_observed)) + 1) / (len(t_array) + 1))
+    p_value = _bootstrap_p(y, X, projector, leverage, codes, param_index,
+                           n_clusters, restricted_projector, restricted_X,
+                           points, np.random.default_rng(seed), draws)
+    replications = draws
 
     return {
         "param": param,
@@ -222,13 +217,13 @@ def wild_cluster_pvalue(model_formula: str, data, param: str, groups,
         "t_observed": t_observed,
         "p_value": p_value,
         "n_clusters": n_clusters,
-        "replications": len(t_array),
+        "replications": replications,
         "weights": "webb" if webb else "rademacher",
         # The smallest p this procedure can return, given the +1 correction:
         # every replication would have to fall below the observed statistic.
         # Report it beside the p-value so a null can be read against what the
         # test could ever have detected.
-        "min_attainable_p": 1.0 / (len(t_array) + 1) if len(t_array) else float("nan"),
+        "min_attainable_p": 1.0 / (replications + 1),
     }
 
 
