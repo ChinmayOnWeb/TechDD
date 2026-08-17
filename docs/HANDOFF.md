@@ -1,12 +1,12 @@
 # Handoff — repo-health research pipeline
 
-State as of 2026-08-16. Everything below is committed on
-`claude/session-planning-40wqkl` and pushed. 269 tests green.
+State as of 2026-08-17. Everything below is committed on
+`claude/session-planning-40wqkl` and pushed. 276 tests green.
 
 **Part A now runs end to end and is estimated.** See `docs/part-a-results.md`
 for results, and read the minimum-detectable-effect section before quoting any
-Part A number: the design has 1-2% power against realistic effects, so its null
-is a statement about the design rather than about the world.
+Part A number: the design has under 2% power against realistic effects, so its
+null is a statement about the design rather than about the world.
 
 ## Where the study stands
 
@@ -16,7 +16,7 @@ which **supersedes** the original 2026-07-06 panel spec:
 | part | question | status |
 |---|---|---|
 | **C** | Does repo health predict a project's own outcomes? | **ANSWERED.** See `docs/cohort-hazard-results.md`. |
-| **A** | Do public markets price it? | **ESTIMATED.** 6 firms build (112 firm-quarters), 5 identify H1 (75). No detectable effect -- but underpowered by ~50x. See `docs/part-a-results.md`. |
+| **A** | Do public markets price it? | **ESTIMATED.** 7 firms build (127 firm-quarters), 6 identify H1 (88). No detectable effect -- but underpowered by ~30x. See `docs/part-a-results.md`. |
 | **B** | Do acquirers price it? | Not started. |
 
 The order matters and is not cosmetic: without C, a null in A cannot distinguish
@@ -54,14 +54,16 @@ Losing them again would cost another manual fetch.
 Universe is 7 firms; Confluent is excluded by the attribution rule
 (`docs/decision-repo-attribution.md`). Of the remainder:
 
-- **Estimating (5):** Couchbase, Elastic, GitLab, HashiCorp, MongoDB.
+- **Estimating (6):** Cloudera, Couchbase, Elastic, GitLab, HashiCorp, MongoDB.
 - **Builds but absorbed (1):** Hortonworks. It delisted 2018Q3, before MongoDB
   opens 2019Q2, so it overlaps no other firm and every observation is a
   singleton under two-way fixed effects. Dropped per Correia (2015); this does
   not move any coefficient.
-- **Too short (1):** Cloudera, 3 fiscal quarters. Its price export starts
-  2020-11 against a 2017 listing, so it cannot form LTM revenue. A wider export
-  is the only fix.
+Cloudera's full-listing price history arrived 2026-08-17 and it now identifies.
+That one firm nearly halved the minimum detectable effect (1.4 -> 0.75) and
+dissolved the H2 k=1 coefficient (-0.048 -> -0.008, bootstrap p 0.115 -> 0.796).
+**At this size the binding constraint is the number of firms, not the number of
+quarters** -- adding a cluster beats any amount of respecification.
 
 Rebuild and estimate:
 
@@ -95,15 +97,17 @@ already specifies:
 - **Confluent** (Kafka), **Cloudera** (Impala/Hadoop), **Hortonworks** (Hadoop/Ambari)
   — foundation projects. **Run the plurality test; do not assign by assumption.**
 
-Known gap: the CLDR price export covers only 2020-11 → 2021-10, though Cloudera
-listed in 2017. Re-export wider or accept ~4 quarters instead of ~18.
+(Resolved 2026-08-17: the CLDR export now covers the full listing, 2017-05-01 →
+2021-10-07, and reconciles to the cent with the old one on all 235 overlapping
+dates.)
 
 Inference note: at this firm count, **wild-cluster bootstrap** p-values are the
 headline, not asymptotic clustered SEs. **Now implemented** (`regress.py`), with
 Webb six-point weights below 13 clusters — Rademacher weights are too coarse
 there and would pin the smallest attainable p-value above 0.05, giving a 5% test
 zero power against any effect. This is not a footnote: the asymptotic SEs report
-p < 0.001 for an H2 coefficient the bootstrap puts at p = 0.115.
+p < 0.001 for an H2 coefficient the bootstrap puts at p = 0.115 — and which one
+extra firm has since taken to zero.
 
 ## Decisions already frozen (do not silently revisit)
 

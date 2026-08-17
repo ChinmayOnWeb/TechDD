@@ -205,6 +205,60 @@ def test_revenue_filed_date_is_the_earliest_filing_not_the_latest(tmp_path):
     assert by_end[date(2024, 7, 31)].revenue_filed == date(2024, 9, 4)
 
 
+def test_filing_date_comes_from_the_filing_not_the_revenue_tag(tmp_path):
+    """The publication date is a property of the FILING. A firm that changed
+    revenue tags (Cloudera used SalesRevenueServicesNet before ASC 606) has no
+    fact under the revenue tags for its early quarters until a later 10-K
+    restates them as comparatives -- which would date the quarter to that later
+    10-K. Scanning every duration fact recovers the real date."""
+    facts = {"cik": 8, "facts": {"dei": {}, "us-gaap": {
+        # revenue under a tag we do not read, in the ORIGINAL 10-Q
+        "SalesRevenueServicesNet": {"units": {"USD": [
+            _entry("2024-02-01", "2024-04-30", 100.0) | {"filed": "2024-06-05"},
+        ]}},
+        # ... and under a tag we do read, but only as a later comparative
+        "RevenueFromContractWithCustomerExcludingAssessedTax": {"units": {"USD": [
+            _entry("2024-02-01", "2024-04-30", 100.0) | {"filed": "2025-06-04"},
+        ]}},
+    }}}
+    import json as _json
+    rows = fetch_fundamentals("0000000008", tmp_path, fetch=lambda url: _json.dumps(facts))
+    assert rows[0].revenue_filed == date(2024, 6, 5)
+
+
+def test_a_period_first_seen_as_an_ancient_comparative_gets_no_filing_date(tmp_path):
+    """companyfacts begins at a firm's first XBRL periodic report, so pre-IPO
+    quarters surface only inside a much later filing. Pricing those at the
+    comparative's filing date would use a price set over a year after the fact,
+    so they must carry no date and fall back to the quarter-end price."""
+    facts = {"cik": 9, "facts": {"dei": {}, "us-gaap": {
+        "RevenueFromContractWithCustomerExcludingAssessedTax": {"units": {"USD": [
+            # pre-IPO quarter, first seen as a comparative 14 months later
+            _entry("2024-02-01", "2024-04-30", 100.0) | {"filed": "2025-06-04"},
+            # first quarter as a public company, filed on time
+            _entry("2025-02-01", "2025-04-30", 130.0) | {"filed": "2025-06-04"},
+        ]}},
+    }}}
+    import json as _json
+    rows = fetch_fundamentals("0000000009", tmp_path, fetch=lambda url: _json.dumps(facts))
+    by_end = {r.quarter_end: r for r in rows}
+    assert by_end[date(2024, 4, 30)].revenue_filed is None      # 400 days: rejected
+    assert by_end[date(2025, 4, 30)].revenue_filed == date(2025, 6, 4)
+
+
+def test_filing_deadline_bound_admits_a_late_first_10k(tmp_path):
+    """The bound must not reject legitimate filings. A non-accelerated filer
+    has 90 days for a 10-K plus 15 under Rule 12b-25; a fiscal Q4 dated to a
+    10-K at 100 days is late but real."""
+    from git_due_diligence.panel.edgar import within_filing_deadline
+    kept = within_filing_deadline({
+        date(2024, 1, 31): date(2024, 5, 10),    # 100 days: a slow 10-K
+        date(2024, 4, 30): date(2024, 6, 14),    # 45 days: a 10-Q
+        date(2023, 1, 31): date(2024, 5, 10),    # 465 days: a comparative
+    })
+    assert set(kept) == {date(2024, 1, 31), date(2024, 4, 30)}
+
+
 def test_derived_q4_is_dated_to_the_annual_filing(tmp_path):
     """A Q4 backed out of the 10-K becomes public with that 10-K."""
     facts = {"cik": 7, "facts": {"dei": {}, "us-gaap": {

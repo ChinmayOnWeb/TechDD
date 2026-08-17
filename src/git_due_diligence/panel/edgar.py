@@ -35,6 +35,9 @@ _SHARES_DURATION_FALLBACK_TAGS = [
 _QUARTER_DAYS = (80, 100)
 _ANNUAL_DAYS = (350, 380)
 _INSTANT_TOLERANCE_DAYS = 70
+# Latest a period's FIRST publication can legitimately land; see
+# `within_filing_deadline`.
+_MAX_FIRST_FILING_LAG_DAYS = 120
 
 
 @dataclass
@@ -102,18 +105,34 @@ def _duration_series(section: dict, tags: list[str],
     return merged
 
 
-def revenue_filed_dates(section: dict, tags: list[str],
+def revenue_filed_dates(section: dict, tags: list[str] | None = None,
                         day_range: tuple[int, int] = _QUARTER_DAYS) -> dict[date, date]:
-    """Earliest filing date per period end, across the same merged tag set.
+    """Earliest filing date per period end.
 
     XBRL repeats a fact in every later filing that shows it as a comparative,
     so the same quarter appears with filing dates spanning years. Only the
     EARLIEST matters: that is when the number became public and the market could
-    act on it. Taking any other would understate the information lag."""
+    act on it. Taking any other would understate the information lag.
+
+    `tags=None` (the default, and what `fetch_fundamentals` uses) scans EVERY
+    us-gaap duration fact rather than only the revenue tags. The publication
+    date is a property of the FILING, not of one element: whichever 10-Q or
+    10-K first reports any fact for a period is the filing that made that
+    period public. Restricting the scan to the revenue tags makes the answer
+    hostage to tag choice, and firms do change tags. Cloudera reported total
+    revenue as `SalesRevenueServicesNet` before ASC 606, so its FY2018 quarters
+    carry no fact under the revenue tags until the FY2019 10-K restates them as
+    comparatives -- which dated the quarter ending 2018-01-31 to 2019-03-29, a
+    lag of 422 days, and priced it fourteen months late. Scanning all tags
+    recovers the true 10-K date of 2018-04-04 (63 days). Verified against all
+    eight companyfacts payloads in `panel_cache/`: it changes Cloudera and
+    NOTHING else, because every other firm tagged revenue consistently."""
     lo, hi = day_range
     earliest: dict[date, date] = {}
-    for tag in tags:
-        for entry in section.get(tag, {}).get("units", {}).get("USD", []):
+    bodies = (section.values() if tags is None
+              else [section.get(tag, {}) for tag in tags])
+    for body in bodies:
+        for entry in body.get("units", {}).get("USD", []):
             if ("start" not in entry or "filed" not in entry
                     or entry.get("form") not in ("10-Q", "10-K")):
                 continue
@@ -125,6 +144,30 @@ def revenue_filed_dates(section: dict, tags: list[str],
             if end not in earliest or filed < earliest[end]:
                 earliest[end] = filed
     return earliest
+
+
+def within_filing_deadline(filed: dict[date, date],
+                           limit_days: int = _MAX_FIRST_FILING_LAG_DAYS) -> dict[date, date]:
+    """Drop period ends whose earliest observed filing is too late to be that
+    period's actual publication.
+
+    companyfacts starts at a firm's first XBRL periodic report, so quarters
+    predating the IPO appear only as comparatives inside a later filing. Their
+    real publication was the S-1 or prospectus, which companyfacts does not
+    carry. Every firm in this universe shows one such period end at a lag of
+    ~400 days; pricing those rows at the comparative's filing date would use a
+    price set more than a year after the fact.
+
+    The bound is the statutory outer limit. A non-accelerated filer -- which is
+    what a newly public company is -- has 90 days for a 10-K and 45 for a 10-Q
+    (17 CFR 240.13a-1/13a-13); Rule 12b-25 buys 15 more calendar days for an
+    annual report. 105 days is therefore the latest a first publication can
+    legitimately land, and 120 leaves room for weekend and holiday rolls
+    without admitting any of the ~400-day comparatives. A period end outside the
+    bound gets no filing date at all, so the panel falls back to the
+    quarter-end price and flags the row rather than inventing a date."""
+    return {end: when for end, when in filed.items()
+            if (when - end).days <= limit_days}
 
 
 def _derive_q4(quarterly: dict[date, float], annual: dict[date, float]) -> dict[date, float]:
@@ -211,11 +254,12 @@ def fetch_fundamentals(cik: str, cache_dir: Path,
         _duration_series(gaap, _OPERATING_INCOME_TAGS, _QUARTER_DAYS),
         _duration_series(gaap, _OPERATING_INCOME_TAGS, _ANNUAL_DAYS),
     )
-    filed = revenue_filed_dates(gaap, _REVENUE_TAGS)
-    annual_filed = revenue_filed_dates(gaap, _REVENUE_TAGS, _ANNUAL_DAYS)
+    filed = revenue_filed_dates(gaap, day_range=_QUARTER_DAYS)
+    annual_filed = revenue_filed_dates(gaap, day_range=_ANNUAL_DAYS)
     # A derived Q4 becomes public with the 10-K it was backed out of.
     for fy_end, when in annual_filed.items():
         filed.setdefault(fy_end, when)
+    filed = within_filing_deadline(filed)
 
     cash = _instant_series(gaap, _CASH_TAGS, "USD")
     debt = _merged_instant_series(gaap, _DEBT_TAGS, "USD")
