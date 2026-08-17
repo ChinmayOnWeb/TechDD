@@ -52,6 +52,7 @@ def build(
     metrics_by_slug: dict = {}
     fundamentals_by_slug: dict = {}
     prices_by_slug: dict = {}
+    filing_prices_by_slug: dict = {}
     kept = []
     for firm in firms:
         clone = clones / firm.slug
@@ -74,13 +75,22 @@ def build(
         metrics_by_slug[firm.slug] = load_or_compute_metrics(
             firm.slug, clone, quarter_ends, cache)
         fundamentals_by_slug[firm.slug] = fundamentals
+        # The headline multiple is formed when the revenue became public, not at
+        # the quarter-end, so prices are needed on the filing dates too.
+        filing_dates = sorted({f.revenue_filed for f in fundamentals
+                               if f.revenue_filed is not None})
         series = crsp_prices.get(firm.ticker.upper())
         if series:
             prices_by_slug[firm.slug] = quarter_end_prices_from_series(series, quarter_ends)
+            filing_prices_by_slug[firm.slug] = quarter_end_prices_from_series(
+                series, filing_dates)
         else:
             prices_by_slug[firm.slug] = quarter_end_prices(firm.ticker, quarter_ends, cache)
+            filing_prices_by_slug[firm.slug] = quarter_end_prices(
+                firm.ticker, filing_dates, cache)
         kept.append(firm)
-    panel = build_panel(kept, metrics_by_slug, fundamentals_by_slug, prices_by_slug)
+    panel = build_panel(kept, metrics_by_slug, fundamentals_by_slug, prices_by_slug,
+                        filing_prices_by_slug)
     panel.to_csv(output, index=False)
     n_firms = panel["firm"].nunique() if len(panel) else 0
     typer.echo(f"Panel written to {output}: {len(panel)} firm-quarters across {n_firms} firms")

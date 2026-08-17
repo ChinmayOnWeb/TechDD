@@ -179,3 +179,44 @@ def test_companyfacts_cached_after_first_fetch(tmp_path):
     assert len(calls) == 1
     assert calls[0] == "https://data.sec.gov/api/xbrl/companyfacts/CIK0000000001.json"
     assert (tmp_path / "edgar_CIK0000000001.json").exists()
+
+
+def test_revenue_filed_date_is_the_earliest_filing_not_the_latest(tmp_path):
+    """XBRL repeats a fact in every later filing that shows it as a
+    comparative, so one quarter carries filing dates spanning years. Only the
+    earliest is the date the number became public; taking any other would
+    understate the information lag and reintroduce look-ahead."""
+    facts = {"cik": 6, "facts": {"dei": {}, "us-gaap": {
+        "RevenueFromContractWithCustomerExcludingAssessedTax": {"units": {"USD": [
+            # first reported 36 days after the quarter ends ...
+            {"start": "2024-02-01", "end": "2024-04-30", "val": 100.0,
+             "form": "10-Q", "filed": "2024-06-05"},
+            # ... then repeated as a comparative a year later
+            {"start": "2024-02-01", "end": "2024-04-30", "val": 100.0,
+             "form": "10-Q", "filed": "2025-06-04"},
+            {"start": "2024-05-01", "end": "2024-07-31", "val": 110.0,
+             "form": "10-Q", "filed": "2024-09-04"},
+        ]}},
+    }}}
+    import json as _json
+    rows = fetch_fundamentals("0000000006", tmp_path, fetch=lambda url: _json.dumps(facts))
+    by_end = {r.quarter_end: r for r in rows}
+    assert by_end[date(2024, 4, 30)].revenue_filed == date(2024, 6, 5)
+    assert by_end[date(2024, 7, 31)].revenue_filed == date(2024, 9, 4)
+
+
+def test_derived_q4_is_dated_to_the_annual_filing(tmp_path):
+    """A Q4 backed out of the 10-K becomes public with that 10-K."""
+    facts = {"cik": 7, "facts": {"dei": {}, "us-gaap": {
+        "RevenueFromContractWithCustomerExcludingAssessedTax": {"units": {"USD": [
+            _entry("2024-02-01", "2024-04-30", 100.0) | {"filed": "2024-06-05"},
+            _entry("2024-05-01", "2024-07-31", 110.0) | {"filed": "2024-09-04"},
+            _entry("2024-08-01", "2024-10-31", 120.0) | {"filed": "2024-12-05"},
+            _entry("2024-02-01", "2025-01-31", 460.0, form="10-K") | {"filed": "2025-03-20"},
+        ]}},
+    }}}
+    import json as _json
+    rows = fetch_fundamentals("0000000007", tmp_path, fetch=lambda url: _json.dumps(facts))
+    q4 = {r.quarter_end: r for r in rows}[date(2025, 1, 31)]
+    assert q4.revenue == 130.0
+    assert q4.revenue_filed == date(2025, 3, 20)

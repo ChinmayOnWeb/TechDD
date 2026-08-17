@@ -45,6 +45,11 @@ class QuarterFundamentals:
     cash: float | None
     debt: float | None
     shares_outstanding: float | None
+    # Date this quarter's revenue FIRST reached the public, i.e. the earliest
+    # 10-Q/10-K filing carrying it. Pairing a quarter-end price with revenue
+    # that files a median of ~36 days later would use information the market
+    # did not have; see `revenue_filed_dates`.
+    revenue_filed: date | None = None
 
 
 def _default_fetch(url: str) -> str:
@@ -95,6 +100,31 @@ def _duration_series(section: dict, tags: list[str],
             if lo <= (end - start).days <= hi:
                 merged.setdefault(end, float(entry["val"]))
     return merged
+
+
+def revenue_filed_dates(section: dict, tags: list[str],
+                        day_range: tuple[int, int] = _QUARTER_DAYS) -> dict[date, date]:
+    """Earliest filing date per period end, across the same merged tag set.
+
+    XBRL repeats a fact in every later filing that shows it as a comparative,
+    so the same quarter appears with filing dates spanning years. Only the
+    EARLIEST matters: that is when the number became public and the market could
+    act on it. Taking any other would understate the information lag."""
+    lo, hi = day_range
+    earliest: dict[date, date] = {}
+    for tag in tags:
+        for entry in section.get(tag, {}).get("units", {}).get("USD", []):
+            if ("start" not in entry or "filed" not in entry
+                    or entry.get("form") not in ("10-Q", "10-K")):
+                continue
+            start = date.fromisoformat(entry["start"])
+            end = date.fromisoformat(entry["end"])
+            if not (lo <= (end - start).days <= hi):
+                continue
+            filed = date.fromisoformat(entry["filed"])
+            if end not in earliest or filed < earliest[end]:
+                earliest[end] = filed
+    return earliest
 
 
 def _derive_q4(quarterly: dict[date, float], annual: dict[date, float]) -> dict[date, float]:
@@ -181,6 +211,12 @@ def fetch_fundamentals(cik: str, cache_dir: Path,
         _duration_series(gaap, _OPERATING_INCOME_TAGS, _QUARTER_DAYS),
         _duration_series(gaap, _OPERATING_INCOME_TAGS, _ANNUAL_DAYS),
     )
+    filed = revenue_filed_dates(gaap, _REVENUE_TAGS)
+    annual_filed = revenue_filed_dates(gaap, _REVENUE_TAGS, _ANNUAL_DAYS)
+    # A derived Q4 becomes public with the 10-K it was backed out of.
+    for fy_end, when in annual_filed.items():
+        filed.setdefault(fy_end, when)
+
     cash = _instant_series(gaap, _CASH_TAGS, "USD")
     debt = _merged_instant_series(gaap, _DEBT_TAGS, "USD")
     shares = _shares_series(gaap, dei)
@@ -193,6 +229,7 @@ def fetch_fundamentals(cik: str, cache_dir: Path,
             cash=_nearest(cash, q_end),
             debt=_nearest(debt, q_end),
             shares_outstanding=_nearest(shares, q_end),
+            revenue_filed=filed.get(q_end),
         )
         for q_end, rev in sorted(revenue.items())
     ]

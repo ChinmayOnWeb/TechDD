@@ -90,3 +90,46 @@ def test_empty_inputs_yield_empty_frame():
     firm, *_ = _inputs()
     panel = build_panel([firm], {}, {}, {})
     assert panel.empty
+
+
+def test_multiple_is_formed_at_the_filing_price_not_the_quarter_end_price():
+    """The market cannot price revenue it has not seen. A quarter-end price
+    predates the 10-Q by ~36 days across this universe, so pairing the two asks
+    whether prices reflect unpublished information. `log_ev_rev` must therefore
+    use the filing-date price, keeping the quarter-end variant for robustness."""
+    firm, metrics, fundamentals, prices = _inputs()
+    filed = {q: date(q.year + (q.month == 12), (q.month % 12) + 2, 5) for q in QUARTERS}
+    fundamentals = [
+        QuarterFundamentals(
+            quarter_end=f.quarter_end, revenue=f.revenue,
+            operating_income=f.operating_income, cash=f.cash, debt=f.debt,
+            shares_outstanding=f.shares_outstanding,
+            revenue_filed=filed[f.quarter_end])
+        for f in fundamentals
+    ]
+    # price doubles between each quarter-end and its filing date
+    filing_prices = {d: 40.0 for d in filed.values()}
+
+    panel = build_panel([firm], {"acme": metrics}, {"acme": fundamentals},
+                        {"acme": prices}, {"acme": filing_prices})
+    row = panel.iloc[0]
+    assert row["priced_at_filing"] == 1
+    assert row["priced_at"] == filed[QUARTERS[3]].isoformat()
+    assert row["market_cap"] == 40.0 * 1_000_000.0          # filing-date price
+    # The robustness column keeps the quarter-end price. The gap is the log
+    # ratio of the two enterprise values, not log(2): net debt (-50 of net cash
+    # here) enters EV additively and so does not scale with the price.
+    net_debt = row["net_debt"]
+    assert math.isclose(
+        row["log_ev_rev"] - row["log_ev_rev_qend"],
+        math.log((40e6 + net_debt) / (20e6 + net_debt)), rel_tol=1e-9)
+
+
+def test_falls_back_to_the_quarter_end_price_when_no_filing_price_exists():
+    """Missing filing-date prices must degrade the panel, not empty it."""
+    firm, metrics, fundamentals, prices = _inputs()
+    panel = build_panel([firm], {"acme": metrics}, {"acme": fundamentals},
+                        {"acme": prices}, {})
+    assert len(panel) == len(QUARTERS) - 3
+    assert set(panel["priced_at_filing"]) == {0}
+    assert panel.iloc[0]["priced_at"] == QUARTERS[3].isoformat()

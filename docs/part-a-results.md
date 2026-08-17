@@ -26,7 +26,7 @@ either the pricing or the predictive specification.**
 
 | Model | Outcome | beta | asymptotic p | **bootstrap p** |
 |---|---|---|---|---|
-| H1 | log(EV/Rev) | -0.027 | 0.862 | **0.918** |
+| H1 | log(EV/Rev) | -0.011 | 0.935 | **0.951** |
 | H2 k=1 | growth t+1 | -0.048 | **0.000** | **0.115** |
 | H2 k=2 | growth t+2 | -0.074 | **0.000** | **0.090** |
 | H2 k=3 | growth t+3 | -0.075 | 0.000 | **0.176** |
@@ -106,7 +106,7 @@ revenue multiple by a factor of e^1.4, roughly **4x** -- and to do so net of
 firm and period fixed effects, growth, margin and size.
 
 No plausible mechanism produces that. Against effects of the size actually
-estimated (beta = -0.027), the design has **1-2% power**.
+estimated (beta = -0.011), the design has **1-2% power**.
 
 So the correct reading of Part A is not "repo health does not predict value."
 It is: **this panel cannot distinguish any realistic effect from zero.** The
@@ -120,6 +120,39 @@ pipeline on audited firm data, with its power limits stated, rather than as a
 test of the hypothesis.
 
 Reproduce with `gitdd panel power panel.csv`.
+
+## Look-ahead in the dependent variable: fixed
+
+`log(EV/Rev)` paired a quarter-end price with LTM revenue that the market could
+not see until the 10-Q filed. Measured across this universe, the earliest filing
+lands a **median of 36-40 days after the quarter ends** (min 24). Forming the
+multiple at the quarter-end price therefore asked whether prices reflected
+information that had not yet been published.
+
+The design doc offered two fixes -- lag the price to the filing date, or lag
+fundamentals a quarter. EDGAR supports a third and more precise one: every XBRL
+fact carries its filing date, so the multiple can be formed on the exact day the
+revenue became public, with no assumed lag. That is now the headline definition.
+
+One subtlety: XBRL repeats each fact in every later filing that shows it as a
+comparative, so a single quarter carries filing dates spanning years (median 392
+days if taken naively). Only the **earliest** is the publication date. Taking
+any other silently understates the lag; a test asserts this.
+
+All 112 rows are priced at their true filing date (median 38 days after quarter
+end). The quarter-end variant is retained as `log_ev_rev_qend`:
+
+| | beta | bootstrap p |
+|---|---|---|
+| H1, priced at filing (headline) | -0.011 | 0.951 |
+| H1, priced at quarter end (robustness) | -0.027 | 0.918 |
+
+The two measures correlate 0.94 and differ by 0.18 in logs on average, so the
+correction is material even though the conclusion does not move. H2 is unchanged
+by construction: its outcome is forward revenue growth, which contains no price.
+
+Repository metrics need no equivalent treatment -- git history is public as it
+happens.
 
 ## What the controls say
 
@@ -195,6 +228,3 @@ incremental signal beyond what headcount and standard financials already carry.
   obtained.
 - Confluent remains excluded by the attribution rule (21.8% firm share, 65.6%
   unattributable); see `decision-repo-attribution.md`.
-- Look-ahead in the dependent variable (quarter-end price against LTM revenue
-  not public until the 10-Q files) is still unaddressed; the design doc requires
-  choosing one lag convention and applying it mechanically.

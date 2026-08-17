@@ -59,7 +59,21 @@ def _match_fundamentals(by_end: dict[date, QuarterFundamentals],
 def build_panel(firms: list[Firm],
                 metrics_by_slug: dict[str, list[QuarterMetrics]],
                 fundamentals_by_slug: dict[str, list[QuarterFundamentals]],
-                prices_by_slug: dict[str, dict[date, float | None]]):
+                prices_by_slug: dict[str, dict[date, float | None]],
+                filing_prices_by_slug: dict[str, dict[date, float | None]] | None = None):
+    """Assemble the firm-quarter panel.
+
+    `prices_by_slug` is keyed by fiscal quarter-end; `filing_prices_by_slug`, if
+    supplied, is keyed by the date each quarter's revenue was first filed.
+
+    LOOK-AHEAD: the headline `log_ev_rev` is formed at the FILING date, because
+    a quarter-end price cannot embed revenue the market does not see for another
+    ~36 days (the median first-filing lag across this universe). Forming the
+    multiple at the quarter-end price instead asks whether prices reflect
+    information that had not yet been published. The quarter-end variant is
+    retained as `log_ev_rev_qend` for the robustness comparison the study design
+    requires. Repository metrics need no such treatment: git history is public
+    as it happens."""
     import numpy as np
     import pandas as pd
 
@@ -68,6 +82,7 @@ def build_panel(firms: list[Firm],
         quarters = sorted(metrics_by_slug.get(firm.slug, []), key=lambda m: m.quarter_end)
         by_end = {f.quarter_end: f for f in fundamentals_by_slug.get(firm.slug, [])}
         prices = prices_by_slug.get(firm.slug, {})
+        filing_prices = (filing_prices_by_slug or {}).get(firm.slug, {})
         matched = [_match_fundamentals(by_end, m.quarter_end) for m in quarters]
         for i, m in enumerate(quarters):
             if i < 3:
@@ -76,7 +91,12 @@ def build_panel(firms: list[Firm],
             if any(f is None for f in window):
                 continue
             revenue_ltm = sum(f.revenue for f in window)
-            price = prices.get(m.quarter_end)
+            price_qend = prices.get(m.quarter_end)
+            filed_on = window[-1].revenue_filed
+            price_filed = filing_prices.get(filed_on) if filed_on else None
+            # Fall back to the quarter-end price only when the filing-date price
+            # is unavailable, so the panel degrades rather than dropping rows.
+            price = price_filed if price_filed is not None else price_qend
             shares = window[-1].shares_outstanding
             if revenue_ltm <= 0 or price is None or shares is None:
                 continue
@@ -107,6 +127,12 @@ def build_panel(firms: list[Firm],
                 "ev": ev,
                 "ev_rev": ev / revenue_ltm,
                 "log_ev_rev": float(np.log(ev / revenue_ltm)),
+                "priced_at": (filed_on or m.quarter_end).isoformat(),
+                "priced_at_filing": int(price_filed is not None),
+                "log_ev_rev_qend": (
+                    float(np.log((price_qend * shares + net_debt) / revenue_ltm))
+                    if price_qend is not None
+                    and (price_qend * shares + net_debt) > 0 else np.nan),
                 "log_rev": float(np.log(revenue_ltm)),
                 "active_contributors": m.active_contributors,
                 "top_author_share": m.top_author_share,
