@@ -304,8 +304,41 @@ incremental signal beyond what headcount and standard financials already carry.
 - **Cloudera: resolved 2026-08-17.** A full-listing price export was supplied
   and reconciled against the prior one to the cent on all 235 overlapping
   dates. It now identifies.
-- Confluent remains excluded by the attribution rule (21.8% firm share, 65.6%
-  unattributable); see `decision-repo-attribution.md`. It is the only remaining
-  candidate for a seventh cluster, and the MDE section is the argument for
-  revisiting that decision explicitly rather than leaving it frozen.
+- **Confluent: added 2026-08-17 as a robustness arm, by direction.** The
+  attribution exclusion is not retracted; both arms are reported. See the
+  section below and `decision-repo-attribution.md`.
 - Hortonworks needs a bridging firm, not a better estimator.
+
+## Robustness arm: seven firms, with Confluent
+
+Confluent is excluded from the primary specification by the frozen attribution
+rule -- 21.8% Confluent share of Apache Kafka against 65.6% unattributable, so
+its index measures a foundation community more than the firm's own engineering.
+It was added on 2026-08-17 at the principal investigator's direction as a
+documented departure. The primary arm is unchanged and stays primary;
+`panel.csv` rebuilt with `--exclude confluent` is bit-identical to the panel
+built before Confluent's config existed.
+
+| | primary (6 firms) | with Confluent (7 firms) |
+|---|---|---|
+| Firm-quarters identifying H1 | 88 | 100 |
+| H1 beta | +0.022 | −0.024 |
+| H1 bootstrap p | 0.794 | 0.863 |
+| H2 k=1 | −0.008 (p 0.796) | −0.009 (p 0.719) |
+| H2 k=4 | −0.055 (p 0.140) | −0.045 (p 0.273) |
+| **MDE at 80% power** | **0.75** | **0.75** |
+
+The conclusion does not move. H1 flips sign on a coefficient that is
+indistinguishable from zero in both arms, which is what a null looks like under
+perturbation rather than a finding.
+
+**The seventh cluster does not buy what the sixth did.** Cloudera took the MDE
+from ~1.4 to 0.75; Confluent leaves it at 0.75. Returns to an additional cluster
+are already diminishing at G = 7, which sharpens the earlier claim: the binding
+constraint is the number of firms, but the number needed is not eight or nine.
+It is enough clusters for asymptotic inference to work at all, which is roughly
+thirty, and this universe does not contain them.
+
+Where Confluent earned its place is Part B, where it is the fifth deal and
+lowers the exact-test floor enough to change what is decidable. See
+`part-b-results.md`.

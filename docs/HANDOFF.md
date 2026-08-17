@@ -1,7 +1,7 @@
 # Handoff — repo-health research pipeline
 
 State as of 2026-08-17. Everything below is committed on
-`claude/session-planning-40wqkl` and pushed. 276 tests green.
+`claude/session-planning-40wqkl` and pushed. 297 tests green.
 
 **Part A now runs end to end and is estimated.** See `docs/part-a-results.md`
 for results, and read the minimum-detectable-effect section before quoting any
@@ -17,7 +17,7 @@ which **supersedes** the original 2026-07-06 panel spec:
 |---|---|---|
 | **C** | Does repo health predict a project's own outcomes? | **ANSWERED.** See `docs/cohort-hazard-results.md`. |
 | **A** | Do public markets price it? | **ESTIMATED.** 7 firms build (127 firm-quarters), 6 identify H1 (88). No detectable effect -- but underpowered by ~30x. See `docs/part-a-results.md`. |
-| **B** | Do acquirers price it? | Not started. |
+| **B** | Do acquirers price it? | **DONE.** 5 deals. B2 null; B1 separates perfectly but is indistinguishable from operating margin. See `docs/part-b-results.md`. |
 
 The order matters and is not cosmetic: without C, a null in A cannot distinguish
 "markets ignore technical risk" from "we measured nothing real". C also carries
@@ -51,8 +51,11 @@ vendors are blocked by the network policy), so `panel_cache/*.json` and the
 price CSVs are tracked in git deliberately — see the note in `.gitignore`.
 Losing them again would cost another manual fetch.
 
-Universe is 7 firms; Confluent is excluded by the attribution rule
-(`docs/decision-repo-attribution.md`). Of the remainder:
+Universe is 8 firms. Confluent is excluded from the PRIMARY arm by the
+attribution rule and included in a documented robustness arm from 2026-08-17
+(`docs/decision-repo-attribution.md`). Both arms are reported. Note that the
+health index is standardized across the panel, so each arm needs its OWN build
+-- `--exclude confluent` for the primary one. Of the remainder:
 
 - **Estimating (6):** Cloudera, Couchbase, Elastic, GitLab, HashiCorp, MongoDB.
 - **Builds but absorbed (1):** Hortonworks. It delisted 2018Q3, before MongoDB
@@ -68,11 +71,23 @@ quarters** -- adding a cluster beats any amount of respecification.
 Rebuild and estimate:
 
 ```
+# primary arm (6 identifying firms) -- attribution rule as frozen
 gitdd panel build --universe panel/universe --clones /home/user/clones \
-    --cache panel_cache --crsp panel_cache/prices_delisted.csv -o panel.csv
+    --cache panel_cache --crsp panel_cache/prices_delisted.csv \
+    --exclude confluent -o panel.csv
 gitdd panel regress panel.csv -o panel_results
-gitdd panel power   panel.csv          # minimum detectable effect
+gitdd panel power   panel.csv                    # minimum detectable effect
+gitdd panel deals   panel.csv -o panel_results   # Part B
+
+# robustness arm (7 identifying firms) -- attribution rule departed from
+gitdd panel build --universe panel/universe --clones /home/user/clones \
+    --cache panel_cache --crsp panel_cache/prices_delisted.csv -o panel_7firm.csv
+gitdd panel regress panel_7firm.csv -o panel_results_7firm
+gitdd panel deals   panel_7firm.csv -o panel_results_7firm
 ```
+
+Part B needs `/home/user/clones/confluent -> confluent.git` (a bare clone of
+`apache/kafka`) for the robustness arm to build.
 
 Three estimation defects were found and fixed while doing this, all latent until
 the universe widened past the January-fiscal-year firms: time fixed effects keyed

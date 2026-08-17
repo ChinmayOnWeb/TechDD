@@ -1,0 +1,113 @@
+# Part B deal register.
+#
+# One entry per acquisition of a universe firm. Every field is hand-collected
+# from the 8-K / press release, NOT inferred from prices; the price series is
+# then used to VERIFY the dates, and `tests/test_panel_deals.py` asserts that
+# verification. Where prose and prices disagreed, the disagreement is recorded
+# in `notes` rather than smoothed over.
+#
+# Three dates, and they are not interchangeable:
+#   announced       -- the date on the 8-K / press release.
+#   first_affected  -- first trading day whose close can embed the news. NOT
+#                      always `announced`: an after-the-close release moves the
+#                      NEXT session (Hortonworks), and a press leak moves the
+#                      PREVIOUS one (HashiCorp).
+#   unaffected      -- last close that cannot embed the news. The premium
+#                      denominator. Taking "the day before announcement"
+#                      mechanically would be wrong for two of five deals here.
+
+[[deal]]
+slug = "hortonworks"
+ticker = "HDP"
+announced = 2018-10-03
+first_affected = 2018-10-04
+unaffected = 2018-10-03
+completed = 2019-01-03
+consideration = "stock"
+exchange_ratio = 1.305
+acquirer = "Cloudera, Inc."
+acquirer_ticker = "CLDR"
+notes = """All-stock merger of equals: each HDP share converted into 1.305 newly
+issued CLDR shares; CLDR holders took ~60% of the combined equity. Announced
+AFTER the close on 2018-10-03 -- HDP moved only +1.8% that session and +11.9%
+the next, so 2018-10-03 is the last unaffected close and 2018-10-04 the first
+affected one. Valuing the ratio at CLDR's unaffected close (17.08) gives an
+offer of 22.29 against HDP's 21.88: a premium of +1.9%. That is the economics of
+a merger of equals, not a takeover, and it is the reason this deal must not be
+pooled naively with the four cash tenders."""
+
+[[deal]]
+slug = "cloudera"
+ticker = "CLDR"
+announced = 2021-06-01
+first_affected = 2021-06-01
+unaffected = 2021-05-28
+completed = 2021-10-08
+consideration = "cash"
+offer_price = 16.00
+acquirer = "Clayton, Dubilier & Rice and KKR"
+notes = """All-cash take-private at $16.00, ~$5.3bn. Announced pre-market on
+2021-06-01 (the Tuesday after Memorial Day), so the prior session 2021-05-28 is
+the unaffected close at 12.86. The press release claims a 24% premium to that
+close; 16.00/12.86-1 = 24.4%, which reconciles. It also claims 30% to the 30-day
+VWAP, which this pipeline does not compute (no volume-weighted series)."""
+
+[[deal]]
+slug = "hashicorp"
+ticker = "HCP"
+announced = 2024-04-24
+first_affected = 2024-04-23
+unaffected = 2024-04-22
+completed = 2025-02-27
+consideration = "cash"
+offer_price = 35.00
+acquirer = "International Business Machines Corp."
+notes = """All-cash at $35.00, ~$6.4bn enterprise value, IBM 8-K dated
+2024-04-24. THE PREMIUM DENOMINATOR IS NOT THE DAY BEFORE THE ANNOUNCEMENT.
+Bloomberg reported the deal on 2024-04-23 and HCP closed +18.7% that session,
+before the official announcement. So the first affected close precedes the
+announcement date, and the last unaffected close is 2024-04-22 at 24.55. Using
+2024-04-23 (29.15) as the denominator gives a premium of +20.1%; using the
+genuinely unaffected close gives +42.6%. The conventional one-day rule would
+have halved this deal's premium and it is the largest in the sample."""
+
+[[deal]]
+slug = "couchbase"
+ticker = "BASE"
+announced = 2025-06-20
+first_affected = 2025-06-20
+unaffected = 2025-06-18
+completed = 2025-09-24
+consideration = "cash"
+offer_price = 24.50
+acquirer = "Haveli Investments"
+leakage_date = 2025-03-28
+notes = """All-cash at $24.50, ~$1.5bn. The unaffected close is 2025-06-18, not
+2025-06-19: 19 June 2025 was Juneteenth, a market holiday, and the series has no
+row for it. The company's own release confirms the choice, quoting a 29% premium
+to the 2025-06-18 close; 24.50/18.93-1 = 29.4%.
+
+CONTAMINATED BASELINE. Haveli had already announced a stake and accumulated to
+9.8% from 2025-03-28, and the stock re-rated on that news. The company quotes
+BOTH a 29% premium to the pre-deal close and a 67% premium to the 2025-03-27
+close, i.e. before its eventual buyer was known to be building a position. The
+`leakage_date` field records this; the premium is reported on both baselines
+because there is no principled way to choose, and the gap between them (29% vs
+67%) is larger than the spread across the rest of the sample."""
+
+[[deal]]
+slug = "confluent"
+ticker = "CFLT"
+announced = 2025-12-08
+first_affected = 2025-12-08
+unaffected = 2025-12-05
+completed = 2026-03-17
+consideration = "cash"
+offer_price = 31.00
+acquirer = "International Business Machines Corp."
+notes = """All-cash at $31.00, ~$11bn enterprise value. Announced 2025-12-08;
+CFLT closed +29.1% that session against an unaffected close of 23.14 on
+2025-12-05, giving a premium of +34.0%. Confluent is excluded from the Part A
+attribution universe (see decision-repo-attribution.md) but its deal is recorded
+here regardless, so that including or excluding it is a reporting choice rather
+than a data gap."""
