@@ -29,8 +29,11 @@ panel_cache/*
 !panel_cache/edgar_CIK*.json
 !panel_cache/stooq_*.csv
 !panel_cache/prices_delisted.csv
-panel.csv
-panel_results/
+# Derived repo metrics are cheap to store and expensive to rebuild: they require
+# multi-GB clones of every firm's flagship repository, which are NOT in this
+# repo. Committing them (140 KB in total, with panel.csv and the result tables)
+# is what makes Part A reproducible from a fresh checkout alone.
+!panel_cache/metrics_*.json
 
 # Part C cohort working data (regenerable from the frozen frame + seed)
 cohort_cache/
