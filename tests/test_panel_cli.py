@@ -172,3 +172,89 @@ def test_panel_regress_writes_result_tables(tmp_path):
     assert result.exit_code == 0, result.output
     assert (out_dir / "h1_pricing.txt").exists()
     assert "h1" in result.output
+
+
+# --- results directories are bound to the panel that produced them -----------
+#
+# The health index is standardized across whichever firms are in the panel, so
+# panel.csv and panel_7firm.csv are separate studies whose tables happen to
+# share every filename. Both `regress` and `deals` default to `panel_results`.
+
+def _write_panel(path, text):
+    path.write_text(text, encoding="utf-8")
+    return path
+
+
+def test_a_results_directory_records_which_panel_built_it(tmp_path):
+    from git_due_diligence.panel.cli import SOURCE_MARKER, claim_output_dir, source_claim
+
+    panel = _write_panel(tmp_path / "panel.csv", "firm,x\nacme,1\n")
+    out = tmp_path / "results"
+    claim_output_dir(out, panel)
+
+    marker = out / SOURCE_MARKER
+    assert marker.exists()
+    assert marker.read_text(encoding="utf-8") == source_claim(panel)
+    assert marker.read_text(encoding="utf-8").startswith("panel.csv sha256:")
+
+
+def test_a_second_panel_cannot_silently_overwrite_the_first_arms_results(tmp_path):
+    """The mistake this guards against: running the robustness arm without -o,
+    which used to overwrite the primary arm's tables with no warning at all."""
+    import typer
+
+    from git_due_diligence.panel.cli import claim_output_dir
+
+    primary = _write_panel(tmp_path / "panel.csv", "firm,x\nacme,1\n")
+    robustness = _write_panel(tmp_path / "panel_7firm.csv", "firm,x\nacme,1\nbeta,2\n")
+    out = tmp_path / "results"
+
+    claim_output_dir(out, primary)
+    try:
+        claim_output_dir(out, robustness)
+    except typer.Exit as exc:
+        assert exc.exit_code == 1
+    else:
+        raise AssertionError("the second panel was allowed to overwrite the first")
+
+
+def test_rerunning_the_same_panel_is_always_allowed(tmp_path):
+    from git_due_diligence.panel.cli import claim_output_dir
+
+    panel = _write_panel(tmp_path / "panel.csv", "firm,x\nacme,1\n")
+    out = tmp_path / "results"
+    claim_output_dir(out, panel)
+    claim_output_dir(out, panel)  # idempotent: no exception
+
+
+def test_a_panel_edited_in_place_is_treated_as_a_different_study(tmp_path):
+    """Same filename, different contents -- the digest is what decides, because
+    rebuilding a panel changes every firm's z-score."""
+    import typer
+
+    from git_due_diligence.panel.cli import claim_output_dir
+
+    panel = _write_panel(tmp_path / "panel.csv", "firm,x\nacme,1\n")
+    out = tmp_path / "results"
+    claim_output_dir(out, panel)
+
+    _write_panel(panel, "firm,x\nacme,1\nbeta,2\n")
+    try:
+        claim_output_dir(out, panel)
+    except typer.Exit as exc:
+        assert exc.exit_code == 1
+    else:
+        raise AssertionError("an edited panel reused a stale results directory")
+
+
+def test_force_overwrites_and_restamps_the_marker(tmp_path):
+    from git_due_diligence.panel.cli import SOURCE_MARKER, claim_output_dir, source_claim
+
+    primary = _write_panel(tmp_path / "panel.csv", "firm,x\nacme,1\n")
+    robustness = _write_panel(tmp_path / "panel_7firm.csv", "firm,x\nacme,1\nbeta,2\n")
+    out = tmp_path / "results"
+
+    claim_output_dir(out, primary)
+    claim_output_dir(out, robustness, force=True)
+
+    assert (out / SOURCE_MARKER).read_text(encoding="utf-8") == source_claim(robustness)

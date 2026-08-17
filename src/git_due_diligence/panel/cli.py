@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 from datetime import date
 from pathlib import Path
 
@@ -20,6 +21,43 @@ def _require_panel_extra() -> None:
     except ImportError:
         typer.echo(_EXTRA_HINT, err=True)
         raise typer.Exit(code=1)
+
+
+SOURCE_MARKER = "SOURCE_PANEL.txt"
+
+
+def source_claim(panel_csv: Path) -> str:
+    digest = hashlib.sha256(panel_csv.read_bytes()).hexdigest()
+    return f"{panel_csv.name} sha256:{digest}\n"
+
+
+def claim_output_dir(output_dir: Path, panel_csv: Path, force: bool = False) -> None:
+    """Bind a results directory to the panel that produced it.
+
+    The health index is standardized ACROSS the panel, so panel.csv and
+    panel_7firm.csv are two different studies rather than two filters of one.
+    Their result tables nonetheless have identical filenames, and both
+    `regress` and `deals` default to the same `panel_results` directory. That
+    makes it a one-omitted-flag mistake to overwrite the primary arm's numbers
+    with the robustness arm's -- silently, with nothing in the output to say
+    which arm you are now looking at. Recording the source panel turns that
+    into an error, and leaves provenance behind in the directory either way.
+    """
+    claim = source_claim(panel_csv)
+    marker = output_dir / SOURCE_MARKER
+    if marker.exists():
+        held = marker.read_text(encoding="utf-8")
+        if held != claim and not force:
+            typer.echo(
+                f"error: {output_dir}/ holds results built from {held.split()[0]}, "
+                f"not {panel_csv.name}.\n"
+                f"       These arms are separate studies -- the index is standardized "
+                f"across whichever firms are in the panel.\n"
+                f"       Write elsewhere with -o, or pass --force to overwrite.",
+                err=True)
+            raise typer.Exit(code=1)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    marker.write_text(claim, encoding="utf-8")
 
 
 @panel_app.command()
@@ -167,6 +205,8 @@ def deals(
     crsp: Path = typer.Option(Path("panel_cache/prices_delisted.csv"), "--crsp",
                               exists=True, dir_okay=False),
     output_dir: Path = typer.Option(Path("panel_results"), "--output", "-o"),
+    force: bool = typer.Option(False, "--force",
+                               help="Overwrite results built from a different panel"),
 ) -> None:
     """Part B: does repo health predict which firms are acquired, and on what terms?
 
@@ -183,6 +223,7 @@ def deals(
                                                pre_announcement_health, separation_scan,
                                                spearman_exact)
 
+    claim_output_dir(output_dir, panel_csv, force)
     panel = pd.read_csv(panel_csv)
     register_deals = load_deals(register)
     prices = {t: dict(series) for t, series in load_crsp_prices(crsp).items()}
@@ -272,6 +313,8 @@ def deals(
 def regress(
     panel_csv: Path = typer.Argument(..., exists=True, dir_okay=False),
     output_dir: Path = typer.Option(Path("panel_results"), "--output", "-o"),
+    force: bool = typer.Option(False, "--force",
+                               help="Overwrite results built from a different panel"),
 ) -> None:
     """Run the H1 (pricing) and H2 (predictive) regressions on a built panel."""
     _require_panel_extra()
@@ -279,6 +322,7 @@ def regress(
 
     from git_due_diligence.panel.regress import run_regressions
 
+    claim_output_dir(output_dir, panel_csv, force)
     panel = pd.read_csv(panel_csv)
     try:
         results = run_regressions(panel, output_dir)

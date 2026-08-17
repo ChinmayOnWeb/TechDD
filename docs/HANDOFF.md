@@ -1,7 +1,7 @@
 # Handoff — repo-health research pipeline
 
 State as of 2026-08-17. Everything below is committed on
-`claude/session-planning-40wqkl` and pushed. 297 tests green.
+`claude/session-planning-40wqkl` and pushed. 302 tests green.
 
 **Part A now runs end to end and is estimated.** See `docs/part-a-results.md`
 for results, and read the minimum-detectable-effect section before quoting any
@@ -88,6 +88,17 @@ gitdd panel deals   panel_7firm.csv -o panel_results_7firm
 
 Part B needs `/home/user/clones/confluent -> confluent.git` (a bare clone of
 `apache/kafka`) for the robustness arm to build.
+
+The `-o` in each of those lines is load-bearing. `regress` and `deals` both
+default to `panel_results`, and the two arms' tables share every filename, so
+running the robustness panel without `-o` used to overwrite the primary arm's
+numbers silently -- which is exactly what happened once, in the session that
+wrote this. Each results directory now carries a `SOURCE_PANEL.txt` naming the
+panel and its SHA-256, and a command that would write over another panel's
+tables exits 1 instead. `--force` overrides it. This also catches the subtler
+case of a rebuilt panel keeping its old filename: the index is standardized
+across whichever firms are in the panel, so any change to the firm set moves
+every z-score, and the digest is what notices.
 
 Three estimation defects were found and fixed while doing this, all latent until
 the universe widened past the January-fiscal-year firms: time fixed effects keyed
