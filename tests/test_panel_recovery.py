@@ -16,6 +16,15 @@ from git_due_diligence.panel.recovery import (
     validation_succeeds,
     write_provenance,
 )
+from git_due_diligence.panel.universe import fiscal_quarter_ends
+
+
+FROZEN_SAMPLE_END = date(2026, 6, 30)
+FROZEN_REPOSITORY_HEADS = {
+    "elastic": "b5935733cebf339c1a42d62862a189e2b4aee5b7",
+    "gitlab": "94b75fd34b533575dacfea444813f95f9e681155",
+    "mongodb": "d4089ca8721646c1dc944b2e81ca72cdbab5e5a2",
+}
 
 
 def _manifest(tmp_path: Path, *, sample_end="2024-12-31") -> Path:
@@ -87,6 +96,34 @@ def test_manifest_parses_declared_firm():
     manifest = load_manifest(Path("panel/data_manifest.toml"))
     assert [firm.slug for firm in manifest.firms] == ["elastic", "gitlab", "mongodb"]
     assert manifest.firms[1].repository_url == "https://gitlab.com/gitlab-org/gitlab.git"
+
+
+def test_core_manifest_has_one_fixed_study_cutoff_and_resolved_heads():
+    manifest = load_manifest(Path("panel/data_manifest.toml"))
+    assert {firm.sample_end for firm in manifest.firms} == {FROZEN_SAMPLE_END}
+    assert {firm.price_coverage_end for firm in manifest.firms} == {FROZEN_SAMPLE_END}
+    assert {firm.slug: firm.repository_head for firm in manifest.firms} == \
+        FROZEN_REPOSITORY_HEADS
+    assert all(len(firm.repository_head) == 40 for firm in manifest.firms)
+    assert all(int(firm.repository_head, 16) >= 0 for firm in manifest.firms)
+
+
+def test_frozen_cutoff_controls_each_fiscal_quarter_grid():
+    manifest = load_manifest(Path("panel/data_manifest.toml"))
+    for firm in manifest.firms:
+        ends = fiscal_quarter_ends(
+            firm.fiscal_year_end_month, firm.listing_start, firm.sample_end)
+        assert ends[-1] == date(2026, 4, 30)
+        assert all(quarter_end <= FROZEN_SAMPLE_END for quarter_end in ends)
+
+
+def test_recovery_rejects_dynamic_or_different_build_end(tmp_path):
+    firm = load_manifest(_manifest(tmp_path)).firms[0]
+    with pytest.raises(ValueError, match="does not match frozen manifest sample_end"):
+        recover_repository_metrics(
+            (firm,), work_dir=tmp_path / "work", artifact_root=tmp_path,
+            techdd_commit="b" * 40, build_end=date(2026, 9, 1),
+            clone=lambda *_args: pytest.fail("clone must not run for a wrong cutoff"))
 
 
 def test_provenance_generation_and_sha_verification(tmp_path):

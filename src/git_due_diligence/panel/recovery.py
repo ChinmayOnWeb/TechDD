@@ -266,6 +266,14 @@ def recover_repository_metrics(
     The clone is removed in a ``finally`` block before the next firm starts, so
     disk usage is bounded by one source history plus compact cache artifacts.
     """
+    mismatched_cutoffs = [
+        firm.slug for firm in firms
+        if isinstance(firm.sample_end, date) and firm.sample_end != build_end
+    ]
+    if mismatched_cutoffs:
+        raise ValueError(
+            f"build end {build_end} does not match frozen manifest sample_end for: "
+            f"{', '.join(mismatched_cutoffs)}")
     work_dir.mkdir(parents=True, exist_ok=True)
     results: list[dict] = []
 
