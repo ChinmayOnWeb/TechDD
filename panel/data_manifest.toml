@@ -1,0 +1,75 @@
+schema_version = 1
+provenance_schema_version = 1
+metric_schema_version = "quarter-metrics-v1"
+
+[[firms]]
+slug = "elastic"
+name = "Elastic N.V."
+ticker = "ESTC"
+cik = "0001707753"
+repository_url = "https://github.com/elastic/elasticsearch.git"
+repository_host = "github.com"
+repository_attribution = "verified_firm_owned"
+repository_head = "unavailable_until_recovery"
+tier = "core"
+fiscal_year_end_month = 4
+listing_start = 2018-10-05
+listing_end = "open"
+sample_end = "unavailable_until_frozen_build"
+permanent_security_id = "unavailable"
+financial_source = "SEC EDGAR CompanyFacts"
+fundamentals_artifact = "panel_cache/edgar_CIK0001707753.json"
+price_source = "CRSP daily stock file; Stooq permitted only as the existing live-ticker fallback"
+price_artifact = "panel_cache/crsp_part_a_daily.csv"
+price_coverage_start = 2018-10-05
+price_coverage_end = "unavailable_until_frozen_build"
+metrics_artifact = "panel_cache/metrics_elastic.json"
+coverage_caveat = "Open listed window; fiscal year ends April 30. License changes and the OpenSearch fork are documented structural-break risks, not data substitutions."
+
+[[firms]]
+slug = "gitlab"
+name = "GitLab Inc."
+ticker = "GTLB"
+cik = "0001653482"
+repository_url = "https://gitlab.com/gitlab-org/gitlab.git"
+repository_host = "gitlab.com"
+repository_attribution = "verified_canonical_upstream"
+repository_head = "unavailable_until_recovery"
+tier = "core"
+fiscal_year_end_month = 1
+listing_start = 2021-10-14
+listing_end = "open"
+sample_end = "unavailable_until_frozen_build"
+permanent_security_id = "unavailable"
+financial_source = "SEC EDGAR CompanyFacts"
+fundamentals_artifact = "panel_cache/edgar_CIK0001653482.json"
+price_source = "CRSP daily stock file; Stooq permitted only as the existing live-ticker fallback"
+price_artifact = "panel_cache/crsp_part_a_daily.csv"
+price_coverage_start = 2021-10-14
+price_coverage_end = "unavailable_until_frozen_build"
+metrics_artifact = "panel_cache/metrics_gitlab.json"
+coverage_caveat = "Use gitlab.com upstream, never the bot-authored GitHub mirror. Release tags on stable branches are not available from the configured history; release_cadence remains descriptive and excluded."
+
+[[firms]]
+slug = "mongodb"
+name = "MongoDB, Inc."
+ticker = "MDB"
+cik = "0001441816"
+repository_url = "https://github.com/mongodb/mongo.git"
+repository_host = "github.com"
+repository_attribution = "verified_firm_owned"
+repository_head = "unavailable_until_recovery"
+tier = "core"
+fiscal_year_end_month = 1
+listing_start = 2017-10-19
+listing_end = "open"
+sample_end = "unavailable_until_frozen_build"
+permanent_security_id = "unavailable"
+financial_source = "SEC EDGAR CompanyFacts"
+fundamentals_artifact = "panel_cache/edgar_CIK0001441816.json"
+price_source = "CRSP daily stock file; Stooq permitted only as the existing live-ticker fallback"
+price_artifact = "panel_cache/crsp_part_a_daily.csv"
+price_coverage_start = 2017-10-19
+price_coverage_end = "unavailable_until_frozen_build"
+metrics_artifact = "panel_cache/metrics_mongodb.json"
+coverage_caveat = "Open listed window; fiscal year ends January 31. The 2018 SSPL change is a documented structural break. Debt facts must retain the existing supported-tag priority merge."
