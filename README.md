@@ -1,6 +1,8 @@
-# git-due-diligence
+# TechDD
 
 Technical due diligence and valuation modeling for M&A, driven entirely by a target's git history.
+
+**Canonical repository:** `ChinmayOnWeb/TechDD` (default branch: `master`). The Python distribution remains `git-due-diligence`, the import package is `git_due_diligence`, and the CLI command is `gitdd`.
 
 Point it at a local clone of a target company's repository and it produces two artifacts:
 
@@ -31,8 +33,8 @@ error preserved, and every other module still runs.
 Requires Python 3.12+.
 
 ```bash
-git clone https://github.com/ChinmayOnWeb/git-due-diligence.git
-cd git-due-diligence
+git clone https://github.com/ChinmayOnWeb/TechDD.git
+cd TechDD
 python -m venv .venv
 .venv/Scripts/activate      # Windows; use `source .venv/bin/activate` on macOS/Linux
 pip install -e .
