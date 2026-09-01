@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import shutil
 import subprocess
 import tomllib
@@ -12,11 +13,13 @@ from pathlib import Path
 from typing import Callable
 
 from git_due_diligence.panel.metrics_cache import load_or_compute_metrics
+from git_due_diligence.panel.crsp import load_crsp_prices
 from git_due_diligence.panel.universe import fiscal_quarter_ends
 
 PROVENANCE_SUFFIX = ".provenance.json"
 PROVENANCE_SCHEMA_VERSION = 1
 METRIC_SCHEMA_VERSION = "quarter-metrics-v1"
+_COMMIT_SHA = re.compile(r"^[0-9a-f]{40}$")
 
 
 @dataclass(frozen=True)
@@ -184,6 +187,33 @@ def _validate_artifact(root: Path, firm: ManifestFirm, kind: str,
             findings.append(ValidationFinding(
                 "IDENTITY WARNING", label,
                 f"provenance does not declare ticker {firm.ticker}"))
+        try:
+            series = load_crsp_prices(artifact).get(firm.ticker.upper(), [])
+        except (OSError, ValueError) as exc:
+            findings.append(ValidationFinding(
+                "COVERAGE WARNING", label, f"cannot establish actual price coverage: {exc}"))
+        else:
+            if not series:
+                findings.append(ValidationFinding(
+                    "COVERAGE WARNING", label,
+                    f"ticker {firm.ticker} has zero usable rows in the price artifact"))
+            else:
+                actual_start, actual_end = series[0][0], series[-1][0]
+                required_end = (
+                    firm.price_coverage_end
+                    if isinstance(firm.price_coverage_end, date)
+                    else firm.sample_end if isinstance(firm.sample_end, date) else None
+                )
+                if actual_start > firm.price_coverage_start:
+                    findings.append(ValidationFinding(
+                        "COVERAGE WARNING", label,
+                        f"ticker {firm.ticker} actual range {actual_start}..{actual_end}; "
+                        f"required start is {firm.price_coverage_start}"))
+                if required_end is not None and actual_end < required_end:
+                    findings.append(ValidationFinding(
+                        "COVERAGE WARNING", label,
+                        f"ticker {firm.ticker} actual range {actual_start}..{actual_end}; "
+                        f"required end is {required_end}"))
     if kind == "metrics":
         if not provenance.get("source_repository_head"):
             findings.append(ValidationFinding("IDENTITY WARNING", label, "missing source repository HEAD"))
@@ -249,7 +279,22 @@ def recover_repository_metrics(
             raise FileExistsError(f"recovery work path already exists: {repo_path}")
         try:
             clone_repo(firm.repository_url, repo_path)
+            requested_head = firm.repository_head
+            if _COMMIT_SHA.fullmatch(requested_head):
+                # A frozen build must never drift to the remote's current default HEAD.
+                subprocess.run(
+                    ["git", "checkout", "--detach", requested_head], cwd=repo_path,
+                    check=True, capture_output=True, text=True,
+                )
+            elif not requested_head.startswith("unavailable_"):
+                raise ValueError(
+                    f"{firm.slug}: repository_head must be a full commit SHA or "
+                    "an unresolved unavailable_* sentinel")
             head = _git_output(["git", "rev-parse", "HEAD"], cwd=repo_path)
+            if _COMMIT_SHA.fullmatch(requested_head) and head != requested_head:
+                raise RuntimeError(
+                    f"{firm.slug}: checked-out HEAD {head} does not equal requested "
+                    f"manifest SHA {requested_head}")
             quarter_ends = fiscal_quarter_ends(
                 firm.fiscal_year_end_month,
                 firm.listing_start,
