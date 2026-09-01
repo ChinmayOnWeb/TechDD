@@ -2,6 +2,7 @@ import math
 from datetime import date
 
 import numpy as np
+import pytest
 
 from git_due_diligence.panel.assemble import build_panel
 from git_due_diligence.panel.edgar import QuarterFundamentals
@@ -24,7 +25,7 @@ def _inputs():
     ) for i, q in enumerate(QUARTERS)]
     fundamentals = [QuarterFundamentals(
         quarter_end=q, revenue=100.0 + 5 * i, operating_income=10.0,
-        cash=50.0, debt=None, shares_outstanding=1_000_000.0,
+        cash=50.0, debt=100.0, shares_outstanding=1_000_000.0,
     ) for i, q in enumerate(QUARTERS)]
     prices = {q: 20.0 for q in QUARTERS}
     return firm, metrics, fundamentals, prices
@@ -44,8 +45,8 @@ def test_valuation_columns():
     first = _panel().iloc[0]
     assert first["revenue_ltm"] == 100 + 105 + 110 + 115
     assert first["market_cap"] == 20.0 * 1_000_000
-    assert first["net_debt"] == -50.0
-    assert first["ev"] == 20.0 * 1_000_000 - 50.0
+    assert first["net_debt"] == 50.0
+    assert first["ev"] == 20.0 * 1_000_000 + 50.0
     assert abs(first["ev_rev"] - first["ev"] / first["revenue_ltm"]) < 1e-9
     assert abs(first["op_margin_ltm"] - 40.0 / 430.0) < 1e-9
 
@@ -62,6 +63,43 @@ def test_missing_price_drops_row():
     prices[QUARTERS[4]] = None
     panel = build_panel([firm], {"acme": metrics}, {"acme": fundamentals}, {"acme": prices})
     assert QUARTERS[4].isoformat() not in list(panel["quarter_end"])
+
+
+@pytest.mark.parametrize(("cash", "debt", "expected_net_debt"), [
+    (50.0, 100.0, 50.0),
+    (0.0, 0.0, 0.0),
+    (0.0, 100.0, 100.0),
+    (50.0, 0.0, -50.0),
+])
+def test_reported_cash_and_debt_values_are_used(cash, debt, expected_net_debt):
+    firm, metrics, fundamentals, prices = _inputs()
+    for row in fundamentals:
+        row.cash = cash
+        row.debt = debt
+
+    panel = build_panel(
+        [firm], {"acme": metrics}, {"acme": fundamentals}, {"acme": prices})
+
+    assert len(panel) == len(QUARTERS) - 3
+    assert (panel["net_debt"] == expected_net_debt).all()
+
+
+@pytest.mark.parametrize(("cash", "debt"), [
+    (None, 100.0),
+    (50.0, None),
+    (None, None),
+])
+def test_missing_cash_or_debt_drops_observation(cash, debt):
+    """Missing balance-sheet facts must not be silently imputed as zero."""
+    firm, metrics, fundamentals, prices = _inputs()
+    for row in fundamentals:
+        row.cash = cash
+        row.debt = debt
+
+    panel = build_panel(
+        [firm], {"acme": metrics}, {"acme": fundamentals}, {"acme": prices})
+
+    assert panel.empty
 
 
 def test_health_indices_present_and_standardized():

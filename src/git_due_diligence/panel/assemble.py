@@ -78,7 +78,10 @@ def build_panel(firms: list[Firm],
             revenue_ltm = sum(f.revenue for f in window)
             price = prices.get(m.quarter_end)
             shares = window[-1].shares_outstanding
-            if revenue_ltm <= 0 or price is None or shares is None:
+            cash = window[-1].cash
+            debt = window[-1].debt
+            if (revenue_ltm <= 0 or price is None or shares is None
+                    or cash is None or debt is None):
                 continue
             ops = [f.operating_income for f in window]
             op_margin_ltm = (sum(ops) / revenue_ltm
@@ -91,7 +94,7 @@ def build_panel(firms: list[Firm],
                     if prior_ltm > 0:
                         growth_yoy = revenue_ltm / prior_ltm - 1
             market_cap = price * shares
-            net_debt = (window[-1].debt or 0.0) - (window[-1].cash or 0.0)
+            net_debt = debt - cash
             ev = market_cap + net_debt
             if ev <= 0:
                 continue
