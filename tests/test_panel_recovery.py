@@ -1,8 +1,11 @@
 import json
 import os
 import subprocess
+from dataclasses import replace
 from datetime import date, datetime, timezone
 from pathlib import Path
+
+import pytest
 
 from git_due_diligence.panel.history import QuarterMetrics
 from git_due_diligence.panel.recovery import (
@@ -72,7 +75,10 @@ def _complete_artifacts(tmp_path: Path):
     metrics.write_text('{"head": "abc", "metrics": []}', encoding="utf-8")
     _record(metrics, "metrics", "acme", head="abc")
     prices = cache / "prices.csv"
-    prices.write_text("date,TICKER,PRC\n2024-01-01,ACME,10\n", encoding="utf-8")
+    prices.write_text(
+        "date,TICKER,PRC\n2023-01-01,ACME,10\n2024-12-31,ACME,11\n",
+        encoding="utf-8",
+    )
     _record(prices, "prices", "part-a-core", tickers=["ACME"])
     return fundamentals
 
@@ -153,3 +159,148 @@ def test_recovery_streams_one_clone_at_a_time(tmp_path):
     assert list(work.iterdir()) == []
     assert (tmp_path / "cache/metrics_acme.json").is_file()
     assert (tmp_path / "panel_cache/metrics_second.json").is_file()
+
+
+def _commit(destination: Path, content: str, message: str) -> str:
+    (destination / "file.txt").write_text(content, encoding="utf-8")
+    subprocess.run(["git", "-C", str(destination), "add", "."], check=True,
+                   capture_output=True)
+    subprocess.run(
+        ["git", "-C", str(destination), "-c", "user.name=t",
+         "-c", "user.email=t@example.com", "commit", "-m", message],
+        check=True, capture_output=True)
+    return subprocess.run(
+        ["git", "-C", str(destination), "rev-parse", "HEAD"], check=True,
+        capture_output=True, text=True).stdout.strip()
+
+
+def _recovery_compute(slug, repo, _quarter_ends, cache):
+    cache.mkdir(parents=True, exist_ok=True)
+    head = subprocess.run(
+        ["git", "-C", str(repo), "rev-parse", "HEAD"], check=True,
+        capture_output=True, text=True).stdout.strip()
+    (cache / f"metrics_{slug}.json").write_text(
+        json.dumps({"head": head, "metrics": []}), encoding="utf-8")
+    return []
+
+
+def test_unresolved_repository_head_records_current_head(tmp_path):
+    firm = load_manifest(_manifest(tmp_path)).firms[0]
+    observed = {}
+
+    def clone(_url, destination):
+        _init_source(destination)
+        observed["head"] = _commit(destination, "new\n", "new")
+
+    result = recover_repository_metrics(
+        (firm,), work_dir=tmp_path / "work", artifact_root=tmp_path,
+        techdd_commit="b" * 40, build_end=date(2024, 12, 31), clone=clone,
+        compute=_recovery_compute)
+
+    assert result[0]["head"] == observed["head"]
+
+
+def test_resolved_repository_head_checks_out_historical_commit(tmp_path):
+    firm = load_manifest(_manifest(tmp_path)).firms[0]
+    source = tmp_path / "source"
+    _init_source(source)
+    requested = subprocess.run(
+        ["git", "-C", str(source), "rev-parse", "HEAD"], check=True,
+        capture_output=True, text=True).stdout.strip()
+    current = _commit(source, "new\n", "new")
+
+    def clone(_url, destination):
+        subprocess.run(["git", "clone", str(source), str(destination)], check=True,
+                       capture_output=True)
+
+    frozen = replace(firm, repository_head=requested)
+    result = recover_repository_metrics(
+        (frozen,), work_dir=tmp_path / "work", artifact_root=tmp_path,
+        techdd_commit="b" * 40, build_end=date(2024, 12, 31), clone=clone,
+        compute=_recovery_compute)
+
+    assert result[0]["head"] == requested
+    assert result[0]["head"] != current
+
+
+def test_unavailable_resolved_head_fails_before_metric_computation(tmp_path):
+    firm = replace(load_manifest(_manifest(tmp_path)).firms[0], repository_head="f" * 40)
+    computed = False
+
+    def compute(*_args):
+        nonlocal computed
+        computed = True
+
+    with pytest.raises(subprocess.CalledProcessError):
+        recover_repository_metrics(
+            (firm,), work_dir=tmp_path / "work", artifact_root=tmp_path,
+            techdd_commit="b" * 40, build_end=date(2024, 12, 31),
+            clone=lambda _url, destination: _init_source(destination), compute=compute)
+    assert not computed
+
+
+def _replace_prices(tmp_path: Path, body: str, *, tickers=("ACME",)) -> None:
+    prices = tmp_path / "cache/prices.csv"
+    prices.write_text(body, encoding="utf-8")
+    _record(prices, "prices", "part-a-core", tickers=list(tickers))
+
+
+def _coverage_warnings(manifest, tmp_path):
+    return [f for f in validate_runtime_artifacts(manifest, tmp_path)
+            if f.status == "COVERAGE WARNING"]
+
+
+def test_price_artifact_full_actual_coverage_is_valid(tmp_path):
+    manifest = load_manifest(_manifest(tmp_path))
+    _complete_artifacts(tmp_path)
+    assert not _coverage_warnings(manifest, tmp_path)
+    assert validation_succeeds(validate_runtime_artifacts(manifest, tmp_path))
+
+
+def test_price_ticker_declared_in_provenance_but_absent_from_csv(tmp_path):
+    manifest = load_manifest(_manifest(tmp_path))
+    _complete_artifacts(tmp_path)
+    _replace_prices(tmp_path, "date,TICKER,PRC\n2023-01-01,OTHER,10\n")
+    warnings = _coverage_warnings(manifest, tmp_path)
+    assert any("zero usable rows" in f.detail for f in warnings)
+    assert not validation_succeeds(validate_runtime_artifacts(manifest, tmp_path))
+
+
+@pytest.mark.parametrize("body,missing", [
+    ("date,TICKER,PRC\n2023-01-01,ACME,10\n", "required end"),
+    ("date,TICKER,PRC\n2023-02-01,ACME,10\n2024-12-31,ACME,11\n", "required start"),
+    ("date,TICKER,PRC\n2023-01-01,ACME,10\n2024-01-01,ACME,11\n", "required end"),
+])
+def test_insufficient_actual_price_coverage_fails_closed(tmp_path, body, missing):
+    manifest = load_manifest(_manifest(tmp_path))
+    _complete_artifacts(tmp_path)
+    _replace_prices(tmp_path, body)
+    warnings = _coverage_warnings(manifest, tmp_path)
+    assert any(missing in f.detail for f in warnings)
+    assert not validation_succeeds(validate_runtime_artifacts(manifest, tmp_path))
+
+
+def test_shared_price_file_validates_each_ticker_independently(tmp_path):
+    base = load_manifest(_manifest(tmp_path)).firms[0]
+    manifest = load_manifest(_manifest(tmp_path))
+    manifest = replace(manifest, firms=(base, replace(base, slug="other", ticker="OTHER")))
+    _complete_artifacts(tmp_path)
+    _replace_prices(
+        tmp_path,
+        "date,TSYMBOL,PRICE\n2023-01-01,ACME,10\n2024-12-31,ACME,11\n"
+        "2023-02-01,OTHER,20\n2024-12-31,OTHER,21\n",
+        tickers=("ACME", "OTHER"))
+    warnings = _coverage_warnings(manifest, tmp_path)
+    assert any("OTHER" in f.detail and "required start" in f.detail for f in warnings)
+    assert not any("ACME" in f.detail for f in warnings)
+
+
+def test_price_coverage_uses_existing_zero_and_negative_semantics(tmp_path):
+    manifest = load_manifest(_manifest(tmp_path))
+    _complete_artifacts(tmp_path)
+    _replace_prices(
+        tmp_path,
+        "DATADATE,SYMBOL,CLOSE\n2023-01-01,ACME,0\n"
+        "2023-01-02,ACME,-10\n2024-12-31,ACME,-11\n")
+    warnings = _coverage_warnings(manifest, tmp_path)
+    assert any("required start" in f.detail and "2023-01-02" in f.detail for f in warnings)

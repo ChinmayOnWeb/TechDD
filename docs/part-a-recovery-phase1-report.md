@@ -143,3 +143,13 @@ run the full one-repository-at-a-time metric recovery in a durable job with enou
 time for the patch scan. Preserve every raw/derived artifact and sidecar before
 assembling the panel. Do not run Part A estimation until a validated frozen panel
 exists.
+
+## P1 validation corrections (2026-09-01)
+
+The recovery workflow now enforces a resolved manifest repository SHA by checking
+out that exact detached commit and verifying `HEAD` before metric computation.
+Unresolved recovery/discovery runs continue to record the actual remote HEAD.
+Price validation now derives each firm's usable date range from the CRSP artifact
+itself (using the production loader's ticker, date, and price semantics) rather
+than treating provenance ticker declarations as evidence of coverage. These
+corrections do not change the blocked historical recovery findings above.
