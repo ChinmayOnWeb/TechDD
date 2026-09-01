@@ -1,6 +1,8 @@
 import math
 from datetime import date
 
+import numpy as np
+
 from git_due_diligence.panel.assemble import build_panel
 from git_due_diligence.panel.edgar import QuarterFundamentals
 from git_due_diligence.panel.history import QuarterMetrics
@@ -64,9 +66,38 @@ def test_missing_price_drops_row():
 
 def test_health_indices_present_and_standardized():
     panel = _panel()
-    assert abs(panel["repo_health_index_z"].mean()) < 1e-9
     assert "repo_health_index_pca" in panel.columns
     assert panel["repo_health_index_z"].iloc[-1] > panel["repo_health_index_z"].iloc[0]
+
+
+def test_health_index_does_not_change_when_extreme_future_is_appended():
+    firm, metrics, fundamentals, prices = _inputs()
+    historical = build_panel(
+        [firm], {"acme": metrics}, {"acme": fundamentals}, {"acme": prices})
+
+    future_quarters = [date(2025, 3, 31), date(2025, 6, 30), date(2025, 9, 30)]
+    future_metrics = [QuarterMetrics(
+        quarter_end=q, active_contributors=10_000_000 + i,
+        top_author_share=0.999, contributor_gini=0.999,
+        bus_factor_50=1_000_000 + i, churn_gini=0.999,
+        release_cadence=100_000, merge_share=0.999,
+        commit_volume=100_000_000, secret_incidence=10_000.0,
+    ) for i, q in enumerate(future_quarters)]
+    future_fundamentals = [QuarterFundamentals(
+        quarter_end=q, revenue=1_000_000.0, operating_income=1.0,
+        cash=0.0, debt=0.0, shares_outstanding=1_000_000.0,
+    ) for q in future_quarters]
+    extended = build_panel(
+        [firm], {"acme": metrics + future_metrics},
+        {"acme": fundamentals + future_fundamentals},
+        {"acme": prices | {q: 20.0 for q in future_quarters}})
+
+    historical_from_extended = extended[
+        extended["quarter_end"] <= QUARTERS[-1].isoformat()]
+    assert np.allclose(
+        historical["repo_health_index_z"],
+        historical_from_extended["repo_health_index_z"],
+    )
 
 
 def test_components_without_a_stable_healthy_direction_are_excluded():

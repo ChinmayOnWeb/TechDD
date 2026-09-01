@@ -122,12 +122,21 @@ def build_panel(firms: list[Firm],
     if panel.empty:
         return panel
     signed = {}
+    quarter_end = panel["quarter_end"]
     for column, sign in INDEX_COMPONENTS:
         values = np.log1p(panel[column]) if column in _LOG_COMPONENTS else panel[column]
-        std = values.std(ddof=0)
-        signed[column] = sign * (values - values.mean()) / (std if std > 0 else 1.0)
+        standardized = np.empty(len(panel), dtype=float)
+        for quarter in quarter_end.unique():
+            current = quarter_end == quarter
+            history = values[quarter_end <= quarter]
+            std = history.std(ddof=0)
+            denominator = std if std > 0 else 1.0
+            standardized[current] = sign * (values[current] - history.mean()) / denominator
+        signed[column] = standardized
     z = pd.DataFrame(signed)
     panel["repo_health_index_z"] = z.mean(axis=1)
+    # PCA remains a full-panel descriptive summary. Its loadings use the complete
+    # sample, so regressions explicitly refuse it as a predictive index.
     matrix = z.to_numpy()
     _, _, vt = np.linalg.svd(matrix - matrix.mean(axis=0), full_matrices=False)
     pc1 = matrix @ vt[0]
