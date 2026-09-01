@@ -153,3 +153,33 @@ Price validation now derives each firm's usable date range from the CRSP artifac
 itself (using the production loader's ticker, date, and price semantics) rather
 than treating provenance ticker declarations as evidence of coverage. These
 corrections do not change the blocked historical recovery findings above.
+
+## FROZEN PART A BASELINE
+
+- **Study cutoff:** 2026-06-30. This fixed study cutoff is not necessarily a
+  firm fiscal-quarter end; each grid includes only the firm's fiscal quarter
+  ends on or before it.
+- **TechDD freeze code commit:**
+  `5d56c98d9e199244be3d3ecb4201d66c0de301dd`.
+- **Elastic repository lock:**
+  `b5935733cebf339c1a42d62862a189e2b4aee5b7` (verified upstream by fetching
+  that exact SHA with depth one).
+- **GitLab repository lock:**
+  `94b75fd34b533575dacfea444813f95f9e681155` (verified upstream from the
+  canonical GitLab repository by fetching that exact SHA with depth one).
+- **MongoDB repository lock:**
+  `d4089ca8721646c1dc944b2e81ca72cdbab5e5a2` (verified upstream by fetching
+  that exact SHA with depth one).
+- **Last eligible fiscal quarter end:** 2026-04-30 for Elastic, GitLab, and
+  MongoDB.
+
+The repository SHAs are reproducibility locks for the histories from which
+point-in-time metrics will be reconstructed. They are **not** claims that the
+repositories were at those SHAs on the 2026-06-30 study cutoff.
+
+Permanent security identifiers remain explicitly unavailable because no verified
+PERMNO mapping was supplied. The immutable three-ticker CRSP artifact and its
+provenance sidecar, preserved CompanyFacts artifacts and sidecars, and the three
+full-history metric artifacts and sidecars also remain outstanding. No repository
+metric scan, CompanyFacts retrieval or modification, CRSP manufacture, or
+regression estimation was performed as part of this freeze.
