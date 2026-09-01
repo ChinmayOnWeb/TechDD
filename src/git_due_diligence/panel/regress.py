@@ -13,6 +13,11 @@ def run_regressions(panel, output_dir: Path,
                     index_col: str = "repo_health_index_z") -> dict:
     import statsmodels.formula.api as smf
 
+    if index_col == "repo_health_index_pca":
+        raise ValueError(
+            "repo_health_index_pca is a full-panel descriptive index and cannot "
+            "be used in predictive regressions; use repo_health_index_z")
+
     n_firms = panel["firm"].nunique() if "firm" in panel.columns else 0
     if n_firms < _MIN_FIRMS:
         raise ValueError(

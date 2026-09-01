@@ -55,3 +55,11 @@ def test_single_firm_panel_refused_cleanly(tmp_path):
     panel = _synthetic_panel(n_firms=1)
     with pytest.raises(ValueError, match="firm fixed effects"):
         run_regressions(panel, tmp_path)
+
+
+def test_descriptive_pca_refused_as_predictive_index(tmp_path):
+    import pytest
+    panel = _synthetic_panel()
+    panel["repo_health_index_pca"] = panel["repo_health_index_z"]
+    with pytest.raises(ValueError, match="full-panel descriptive index"):
+        run_regressions(panel, tmp_path, index_col="repo_health_index_pca")
