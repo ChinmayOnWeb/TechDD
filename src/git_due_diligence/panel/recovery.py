@@ -15,6 +15,7 @@ from typing import Callable
 from git_due_diligence.panel.metrics_cache import load_or_compute_metrics
 from git_due_diligence.panel.crsp import load_crsp_prices
 from git_due_diligence.panel.universe import fiscal_quarter_ends
+from git_due_diligence.modules.bus_factor import bot_filter_hash
 
 PROVENANCE_SUFFIX = ".provenance.json"
 PROVENANCE_SCHEMA_VERSION = 1
@@ -237,6 +238,13 @@ def _validate_artifact(root: Path, firm: ManifestFirm, kind: str,
                 f"manifest SHA {firm.repository_head!r}"))
         if not provenance.get("techdd_commit"):
             findings.append(ValidationFinding("IDENTITY WARNING", label, "missing producing TechDD commit"))
+        recorded_bot_filter = provenance.get("extra", {}).get("bot_filter_hash")
+        expected_bot_filter = bot_filter_hash()
+        if recorded_bot_filter != expected_bot_filter:
+            findings.append(ValidationFinding(
+                "IDENTITY WARNING", label,
+                f"metrics bot-filter hash {recorded_bot_filter!r} does not match "
+                f"expected {expected_bot_filter!r}"))
         if isinstance(firm.sample_end, date):
             expected_grid = [
                 quarter_end.isoformat() for quarter_end in fiscal_quarter_ends(
@@ -357,7 +365,10 @@ def recover_repository_metrics(
                 techdd_commit=techdd_commit,
                 source_repository_head=head,
                 data_schema_version=METRIC_SCHEMA_VERSION,
-                extra={"quarter_ends": [q.isoformat() for q in quarter_ends]},
+                extra={
+                    "bot_filter_hash": bot_filter_hash(),
+                    "quarter_ends": [q.isoformat() for q in quarter_ends],
+                },
             )
             results.append({"slug": firm.slug, "head": head, "artifact": str(artifact)})
         finally:
