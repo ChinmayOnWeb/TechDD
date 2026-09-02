@@ -1,7 +1,33 @@
 import subprocess
 from pathlib import Path
+from unittest.mock import Mock
 
 from git_due_diligence.ingest import RepoIngest
+
+
+def test_all_history_diffs_pin_unlimited_rename_detection(monkeypatch, tmp_path):
+    ingest = RepoIngest(tmp_path)
+    calls = []
+
+    def fake_git(*args):
+        calls.append(args)
+        return ""
+
+    ingest._git = fake_git
+    assert ingest.commits() == []
+    assert ingest.full_patch_text() == ""
+
+    process = Mock()
+    process.stdout.read.side_effect = [""]
+    process.stdout.close.return_value = None
+    process.wait.return_value = 0
+    monkeypatch.setattr(subprocess, "Popen", Mock(return_value=process))
+    assert list(ingest.iter_patch_records()) == []
+
+    assert calls[0][0:3] == ("log", "--find-renames", "-l0")
+    assert calls[1][0:3] == ("log", "--find-renames", "-l0")
+    popen_args = subprocess.Popen.call_args.args[0]
+    assert popen_args[3:6] == ["log", "--find-renames", "-l0"]
 
 
 def test_commits_parsed_with_authors_and_changes(fixture_repo):

@@ -1,6 +1,6 @@
 # Part A MongoDB metric recovery report
 
-**STATUS: SUCCESS**
+**STATUS: SUCCESS — REGENERATED WITH DETERMINISTIC RENAME SEMANTICS**
 
 ## Frozen target and producer
 
@@ -9,76 +9,66 @@
 | Firm | MongoDB, Inc. (`mongodb`) |
 | Canonical repository | `https://github.com/mongodb/mongo.git` |
 | Frozen repository SHA | `d4089ca8721646c1dc944b2e81ca72cdbab5e5a2` |
-| Producing TechDD commit | `5f55352148ac29873bf95d0cd1a2a375dadf21c5` |
+| Producing TechDD commit | `5ab4a50923ad426e2cf45c34af82990f5774f3ec` |
 | Study cutoff | 2026-06-30 |
 | First fiscal quarter end | 2017-10-31 |
 | Last fiscal quarter end | 2026-04-30 |
 | Quarter rows | 35 |
 | Metric schema | `quarter-metrics-v1` |
+| Bot-filter hash | `7e5c08213be8895660d2e21748ebf023a83d0022993462a21cfc1c3cdae6137b` |
 
-The exact upstream SHA was resolved before recovery by fetching that object with
-`--depth=1` and comparing `FETCH_HEAD`. The run used the production
-`gitdd panel recover-metrics --firm mongodb --build-end 2026-06-30` path. It
-selected only MongoDB, cloned the canonical repository, detached at the manifest
-SHA, and ran the full production metric implementation. Lite mode was not used.
+The production command selected only MongoDB, detached at the frozen manifest
+SHA, and ran the full metric implementation. Lite mode was not used.
 
-## Runtime and disk behavior
+## Deterministic generation contract
 
-The recovery completed successfully in approximately 23 minutes 6 seconds. The
-filesystem had approximately 28 GiB free before the run and again after clone
-cleanup. The checked-out working clone occupied approximately 2.2 GiB. The path
-`panel_recovery_work/mongodb` was absent after completion, confirming cleanup.
+Every history diff operation now explicitly uses `--find-renames -l0`: ordinary
+Git rename detection with its default similarity threshold, and an unlimited
+rename-attempt limit. The same arguments govern `git log --numstat`, buffered
+`git log -p`, and streamed `git log -p`; ambient `diff.renames` and
+`diff.renameLimit` configuration therefore cannot change these metric inputs.
+The deterministic regeneration completed without a rename-limit warning.
 
-Git warned that exhaustive rename detection was skipped because there were too
-many files and suggested raising `diff.renameLimit` to at least 7,531. As required,
-the run did not change that threshold, Git configuration, metric definitions, or
-outputs in response.
+The bot-filter identifier is a SHA-256 content hash over the actual
+`_is_bot_author` implementation plus the sorted bot markers and automation-marker
+constants. Frozen metrics validation requires that exact hash and fails closed if
+it is absent or mismatched.
 
-## Recovered artifacts
+## Runtime and artifacts
 
-| Artifact | Size | SHA-256 |
-|---|---:|---|
-| `panel_cache/metrics_mongodb.json` | 9,340 bytes | `56b7fbe6d0572c11acf1e7cafcbc46ce71d7224e893cefb5e6a5175f0a2b557d` |
-| `panel_cache/metrics_mongodb.json.provenance.json` | 1,227 bytes | `b65635c44a294253a88d60a9ef93dfb05d3ca3e11e37c9a30734abc257909d55` |
+The deterministic run completed in approximately 19 minutes 20 seconds. The working
+clone occupied approximately 2.2 GiB and was removed successfully afterward.
 
-The provenance records identity `mongodb`, the canonical source URL, exact frozen
-source HEAD, producing TechDD commit, UTC build timestamp, metric schema, all 35
-quarter ends, and the metrics artifact SHA-256. The artifact and provenance agree
-on repository HEAD and quarter grid. The artifact contains 35 metric rows whose
-dates exactly match the 35 grid entries from 2017-10-31 through 2026-04-30.
+| Artifact | SHA-256 |
+|---|---|
+| `panel_cache/metrics_mongodb.json` | `af12b72910c42fada9ca508d1fbc30bb1ad51baf3adc57cfe584d65bb6f0915c` |
+| `panel_cache/metrics_mongodb.json.provenance.json` | `1590ff66326efa6a812c2623ed8de5a59d7e63957aba046c3a85414d65bf7382` |
+| deterministic recovery bundle | `0ebec1a61a502c836c8621c14d05b59d73285a2afe70e6b6454def6e971084b7` |
 
-## Validation
+The artifact and provenance agree on the frozen repository HEAD, all 35
+quarter-grid entries, and 35 metric rows spanning 2017-10-31 through
+2026-04-30. Provenance records the producing commit, schema, build timestamp,
+artifact hash, and expected bot-filter hash. Narrow validation returned only
+`AVAILABLE`.
 
-Narrow MongoDB metric validation returned only `AVAILABLE`, with the expected
-artifact SHA-256. Independent inspection found no repository-HEAD, quarter-grid,
-row-count, date-range, provenance, or artifact-hash mismatch.
+## Supersession and durable storage
 
-Full `gitdd panel validate-data` remains false as expected. The required CRSP
-artifact and CompanyFacts files are absent, and GitLab metrics have not yet been
-recovered. Elastic metrics were present and continued to validate under their
-existing artifact/provenance contract. These unrelated missing inputs do not
-invalidate the MongoDB metrics artifact.
+The pre-deterministic artifact is **SUPERSEDED**. Its historical abbreviated
+artifact/provenance/bundle hashes remain recorded in the release as `56b7fbe6… / b65635c4… / 93bd5703…`;
+they are evidence only and are not authoritative.
 
-## Durable storage
-
-The recovered files are preserved using the established Elastic strategy in this
-GitHub prerelease:
+The existing prerelease was replaced in place with the authoritative deterministic
+bundle and restoration instructions:
 
 <https://github.com/ChinmayOnWeb/TechDD/releases/tag/part-a-mongodb-metrics-d4089ca8>
 
-The prerelease targets the producing TechDD commit and embeds a deterministic
-Base64-encoded `tar.gz` recovery bundle with restoration instructions. The bundle
-SHA-256 is
-`93bd5703325fd89da48ed0d15fe0daa8178fc927df6c26b6c33d67b6befdbdf9`.
-A clean restore from the published release body reproduced both files byte for
-byte and reproduced the artifact, sidecar, and bundle hashes.
-
-The gitignored `panel_cache` files were not force-added, and neither the MongoDB
-source clone nor any large raw repository data was committed.
+The release tag now targets the producing TechDD commit. A clean restore from the
+published Base64 bundle reproduced its bundle hash and both files byte-for-byte.
+The gitignored cache and source clone were not committed.
 
 ## Remaining blockers
 
-MongoDB repository metrics are no longer a recovery blocker. Complete Part A
-validation still requires immutable CompanyFacts inputs, the three-ticker CRSP
-export and provenance, and frozen metric recovery for GitLab. No regression
-estimation was run.
+MongoDB repository metrics now satisfy the deterministic provenance contract.
+Complete Part A validation still requires immutable CompanyFacts inputs, the
+three-ticker CRSP export and provenance, and frozen metric recovery for
+GitLab. No regression estimation was run.

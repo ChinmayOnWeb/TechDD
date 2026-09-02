@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import hashlib
+import inspect
+import json
 import re
 from collections import Counter, defaultdict
 
@@ -35,6 +38,17 @@ def _is_bot_author(email: str) -> bool:
     if any(seg in _BOT_MARKERS for seg in segments if seg):
         return True
     return any(marker in local_part for marker in _AUTOMATION_MARKERS)
+
+
+def bot_filter_hash() -> str:
+    """Content hash of the implementation and constants that define bot filtering."""
+    payload = {
+        "automation_markers": _AUTOMATION_MARKERS,
+        "bot_markers": sorted(_BOT_MARKERS),
+        "implementation": inspect.getsource(_is_bot_author),
+    }
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+    return hashlib.sha256(encoded).hexdigest()
 
 
 def _bus_factor(author_counts: Counter) -> int:

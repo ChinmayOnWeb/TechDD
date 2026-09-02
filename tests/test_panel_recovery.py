@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 
 from git_due_diligence.panel.history import QuarterMetrics
+from git_due_diligence.modules.bus_factor import bot_filter_hash
 from git_due_diligence.panel.recovery import (
     load_manifest,
     provenance_path,
@@ -63,7 +64,15 @@ coverage_caveat = "none"
 
 
 def _record(path: Path, kind: str, identity: str, *, tickers=None, head=None,
-            quarter_ends=None):
+            quarter_ends=None, bot_hash=None):
+    extra = None
+    if tickers:
+        extra = {"tickers": tickers}
+    elif quarter_ends is not None:
+        extra = {
+            "bot_filter_hash": bot_filter_hash() if bot_hash is None else bot_hash,
+            "quarter_ends": quarter_ends,
+        }
     return write_provenance(
         path,
         artifact_type=kind,
@@ -73,8 +82,7 @@ def _record(path: Path, kind: str, identity: str, *, tickers=None, head=None,
         techdd_commit="a" * 40 if kind == "metrics" else None,
         source_repository_head=head,
         data_schema_version="v1",
-        extra=({"tickers": tickers} if tickers else
-               {"quarter_ends": quarter_ends} if quarter_ends is not None else None),
+        extra=extra,
     )
 
 
@@ -178,6 +186,30 @@ def test_metrics_repository_head_must_match_frozen_manifest_sha(tmp_path):
     assert not validation_succeeds(findings)
 
 
+def test_metrics_bot_filter_hash_is_required_and_validated(tmp_path):
+    manifest = load_manifest(_manifest(tmp_path))
+    _complete_artifacts(tmp_path)
+    metrics = tmp_path / "cache/metrics_acme.json"
+    metadata_path = provenance_path(metrics)
+    metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+    assert metadata["extra"]["bot_filter_hash"] == bot_filter_hash()
+    assert validation_succeeds(validate_runtime_artifacts(manifest, tmp_path))
+
+    del metadata["extra"]["bot_filter_hash"]
+    metadata_path.write_text(json.dumps(metadata), encoding="utf-8")
+    findings = validate_runtime_artifacts(manifest, tmp_path)
+    assert any(f.status == "IDENTITY WARNING" and "bot-filter hash None" in f.detail
+               for f in findings)
+    assert not validation_succeeds(findings)
+
+    metadata["extra"]["bot_filter_hash"] = "wrong"
+    metadata_path.write_text(json.dumps(metadata), encoding="utf-8")
+    findings = validate_runtime_artifacts(manifest, tmp_path)
+    assert any(f.status == "IDENTITY WARNING" and "bot-filter hash 'wrong'" in f.detail
+               for f in findings)
+    assert not validation_succeeds(findings)
+
+
 @pytest.mark.parametrize("record", ["artifact", "provenance"])
 def test_metrics_quarter_grid_must_match_frozen_manifest_grid(tmp_path, record):
     manifest = load_manifest(_manifest(tmp_path))
@@ -244,6 +276,9 @@ def test_recovery_streams_one_clone_at_a_time(tmp_path):
     assert list(work.iterdir()) == []
     assert (tmp_path / "cache/metrics_acme.json").is_file()
     assert (tmp_path / "panel_cache/metrics_second.json").is_file()
+    provenance = json.loads(provenance_path(
+        tmp_path / "cache/metrics_acme.json").read_text(encoding="utf-8"))
+    assert provenance["extra"]["bot_filter_hash"] == bot_filter_hash()
 
 
 def _commit(destination: Path, content: str, message: str) -> str:

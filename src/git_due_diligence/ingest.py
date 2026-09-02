@@ -7,6 +7,10 @@ from pathlib import Path
 
 # %x1e = record separator between commits, %x1f = field separator within header
 _LOG_FORMAT = "%x1e%H%x1f%ae%x1f%an%x1f%aI%x1f%P"
+# Pin ordinary (50% similarity) rename detection and remove Git's rename-attempt
+# cutoff. This prevents ambient diff.renames/diff.renameLimit configuration from
+# changing churn paths or the patch stream on large histories.
+_RENAME_ARGS = ("--find-renames", "-l0")
 
 
 @dataclass
@@ -42,7 +46,7 @@ class RepoIngest:
     def commits(self) -> list[Commit]:
         if self._commits is not None:
             return self._commits
-        raw = self._git("log", "--numstat", f"--format={_LOG_FORMAT}")
+        raw = self._git("log", *_RENAME_ARGS, "--numstat", f"--format={_LOG_FORMAT}")
         parsed: list[Commit] = []
         for record in raw.split("\x1e")[1:]:
             lines = [ln for ln in record.strip("\n").split("\n") if ln.strip()]
@@ -79,7 +83,8 @@ class RepoIngest:
     def full_patch_text(self) -> str:
         """git log -p output; each commit record starts with \\x1eCOMMIT <sha>. Cached."""
         if self._patch_text is None:
-            self._patch_text = self._git("log", "-p", "--format=%x1eCOMMIT %H")
+            self._patch_text = self._git(
+                "log", *_RENAME_ARGS, "-p", "--format=%x1eCOMMIT %H")
         return self._patch_text
 
     def iter_patch_records(self):
@@ -89,7 +94,8 @@ class RepoIngest:
         bounded by the largest single commit's diff rather than total history size --
         needed for repos where a full-history patch text can exceed available RAM."""
         proc = subprocess.Popen(
-            ["git", "-C", str(self.repo_path), "log", "-p", "--format=%x1eCOMMIT %H"],
+            ["git", "-C", str(self.repo_path), "log", *_RENAME_ARGS,
+             "-p", "--format=%x1eCOMMIT %H"],
             stdout=subprocess.PIPE, text=True, encoding="utf-8", errors="replace",
         )
         assert proc.stdout is not None
