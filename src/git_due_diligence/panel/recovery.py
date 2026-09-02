@@ -63,6 +63,18 @@ class ValidationFinding:
     detail: str
 
 
+def select_manifest_firms(
+    manifest: DataManifest, slug: str | None = None,
+) -> tuple[ManifestFirm, ...]:
+    """Select one declared firm, or preserve the existing all-firms default."""
+    if slug is None:
+        return manifest.firms
+    selected = tuple(firm for firm in manifest.firms if firm.slug == slug)
+    if not selected:
+        raise ValueError(f"firm {slug!r} is not declared in the data manifest")
+    return selected
+
+
 def load_manifest(path: Path) -> DataManifest:
     raw = tomllib.loads(path.read_text(encoding="utf-8"))
     if raw.get("schema_version") != 1:

@@ -82,22 +82,32 @@ def recover_metrics(
     root: Path = typer.Option(Path("."), exists=True, file_okay=False),
     work_dir: Path = typer.Option(Path("panel_recovery_work")),
     build_end: datetime = typer.Option(..., formats=["%Y-%m-%d"]),
+    firm: str = typer.Option(None, "--firm", help="Recover only this manifest firm slug"),
 ) -> None:
     """Regenerate full metrics by cloning and removing one canonical repo at a time."""
     import subprocess
 
-    from git_due_diligence.panel.recovery import load_manifest, recover_repository_metrics
+    from git_due_diligence.panel.recovery import (
+        load_manifest,
+        recover_repository_metrics,
+        select_manifest_firms,
+    )
 
     commit = subprocess.run(
         ["git", "rev-parse", "HEAD"], check=True, capture_output=True, text=True,
     ).stdout.strip()
-    results = recover_repository_metrics(
-        load_manifest(manifest).firms,
-        work_dir=work_dir,
-        artifact_root=root,
-        techdd_commit=commit,
-        build_end=build_end.date(),
-    )
+    try:
+        firms = select_manifest_firms(load_manifest(manifest), firm)
+        results = recover_repository_metrics(
+            firms,
+            work_dir=work_dir,
+            artifact_root=root,
+            techdd_commit=commit,
+            build_end=build_end.date(),
+        )
+    except ValueError as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(code=1)
     for result in results:
         typer.echo(f"AVAILABLE\t{result['slug']}\tHEAD {result['head']}")
 

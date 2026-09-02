@@ -12,6 +12,7 @@ from git_due_diligence.panel.recovery import (
     load_manifest,
     provenance_path,
     recover_repository_metrics,
+    select_manifest_firms,
     sha256_file,
     validate_runtime_artifacts,
     validation_succeeds,
@@ -104,6 +105,14 @@ def test_manifest_parses_declared_firm():
     manifest = load_manifest(Path("panel/data_manifest.toml"))
     assert [firm.slug for firm in manifest.firms] == ["elastic", "gitlab", "mongodb"]
     assert manifest.firms[1].repository_url == "https://gitlab.com/gitlab-org/gitlab.git"
+
+
+def test_manifest_firm_selection_is_optional_and_exact():
+    manifest = load_manifest(Path("panel/data_manifest.toml"))
+    assert select_manifest_firms(manifest) == manifest.firms
+    assert [firm.slug for firm in select_manifest_firms(manifest, "elastic")] == ["elastic"]
+    with pytest.raises(ValueError, match="not declared"):
+        select_manifest_firms(manifest, "not-a-firm")
 
 
 def test_core_manifest_has_one_fixed_study_cutoff_and_resolved_heads():
