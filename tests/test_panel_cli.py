@@ -44,6 +44,8 @@ def _canned_edgar() -> dict:
                 {**entry, "val": 10.0} for entry in revenue]}},
             "CashAndCashEquivalentsAtCarryingValue": {"units": {"USD": [
                 {"end": e, "val": 50.0} for e in ends]}},
+            "LongTermDebt": {"units": {"USD": [
+                {"end": e, "val": 0.0} for e in ends]}},
         },
     }}
 

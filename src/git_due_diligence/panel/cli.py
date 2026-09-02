@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import date
+from datetime import datetime, timezone
 from pathlib import Path
 
 import typer
@@ -20,6 +21,95 @@ def _require_panel_extra() -> None:
     except ImportError:
         typer.echo(_EXTRA_HINT, err=True)
         raise typer.Exit(code=1)
+
+
+@panel_app.command("validate-data")
+def validate_data(
+    manifest: Path = typer.Option(Path("panel/data_manifest.toml"), exists=True,
+                                  dir_okay=False),
+    root: Path = typer.Option(Path("."), exists=True, file_okay=False),
+) -> None:
+    """Validate required Part A artifacts and their provenance; fail closed."""
+    from git_due_diligence.panel.recovery import (
+        load_manifest,
+        validate_runtime_artifacts,
+        validation_succeeds,
+    )
+
+    try:
+        findings = validate_runtime_artifacts(load_manifest(manifest), root)
+    except (OSError, ValueError) as exc:
+        typer.echo(f"manifest invalid: {exc}", err=True)
+        raise typer.Exit(code=1)
+    for finding in findings:
+        typer.echo(f"{finding.status}\t{finding.artifact}\t{finding.detail}")
+    if not validation_succeeds(findings):
+        raise typer.Exit(code=1)
+
+
+@panel_app.command("record-artifact")
+def record_artifact(
+    artifact: Path = typer.Argument(..., exists=True, dir_okay=False),
+    artifact_type: str = typer.Option(...),
+    identity: str = typer.Option(...),
+    source: str = typer.Option(...),
+    techdd_commit: str = typer.Option(None),
+    source_repository_head: str = typer.Option(None),
+    data_schema_version: str = typer.Option(None),
+    ticker: list[str] = typer.Option(None, "--ticker"),
+) -> None:
+    """Create a SHA-256 provenance sidecar for a supplied raw artifact."""
+    from git_due_diligence.panel.recovery import write_provenance
+
+    sidecar = write_provenance(
+        artifact,
+        artifact_type=artifact_type,
+        identity=identity,
+        source=source,
+        retrieved_or_built_at=datetime.now(timezone.utc),
+        techdd_commit=techdd_commit,
+        source_repository_head=source_repository_head,
+        data_schema_version=data_schema_version,
+        extra={"tickers": ticker} if ticker else None,
+    )
+    typer.echo(f"Provenance written to {sidecar}")
+
+
+@panel_app.command("recover-metrics")
+def recover_metrics(
+    manifest: Path = typer.Option(Path("panel/data_manifest.toml"), exists=True,
+                                  dir_okay=False),
+    root: Path = typer.Option(Path("."), exists=True, file_okay=False),
+    work_dir: Path = typer.Option(Path("panel_recovery_work")),
+    build_end: datetime = typer.Option(..., formats=["%Y-%m-%d"]),
+    firm: str = typer.Option(None, "--firm", help="Recover only this manifest firm slug"),
+) -> None:
+    """Regenerate full metrics by cloning and removing one canonical repo at a time."""
+    import subprocess
+
+    from git_due_diligence.panel.recovery import (
+        load_manifest,
+        recover_repository_metrics,
+        select_manifest_firms,
+    )
+
+    commit = subprocess.run(
+        ["git", "rev-parse", "HEAD"], check=True, capture_output=True, text=True,
+    ).stdout.strip()
+    try:
+        firms = select_manifest_firms(load_manifest(manifest), firm)
+        results = recover_repository_metrics(
+            firms,
+            work_dir=work_dir,
+            artifact_root=root,
+            techdd_commit=commit,
+            build_end=build_end.date(),
+        )
+    except ValueError as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(code=1)
+    for result in results:
+        typer.echo(f"AVAILABLE\t{result['slug']}\tHEAD {result['head']}")
 
 
 @panel_app.command()
