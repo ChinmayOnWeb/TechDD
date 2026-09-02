@@ -215,10 +215,35 @@ def _validate_artifact(root: Path, firm: ManifestFirm, kind: str,
                         f"ticker {firm.ticker} actual range {actual_start}..{actual_end}; "
                         f"required end is {required_end}"))
     if kind == "metrics":
-        if not provenance.get("source_repository_head"):
+        recorded_head = provenance.get("source_repository_head")
+        if not recorded_head:
             findings.append(ValidationFinding("IDENTITY WARNING", label, "missing source repository HEAD"))
+        elif _COMMIT_SHA.fullmatch(firm.repository_head) and recorded_head != firm.repository_head:
+            findings.append(ValidationFinding(
+                "IDENTITY WARNING", label,
+                f"metrics repository HEAD {recorded_head!r} does not match frozen "
+                f"manifest SHA {firm.repository_head!r}"))
         if not provenance.get("techdd_commit"):
             findings.append(ValidationFinding("IDENTITY WARNING", label, "missing producing TechDD commit"))
+        if isinstance(firm.sample_end, date):
+            expected_grid = [
+                quarter_end.isoformat() for quarter_end in fiscal_quarter_ends(
+                    firm.fiscal_year_end_month, firm.listing_start, firm.sample_end)
+            ]
+            provenance_grid = provenance.get("extra", {}).get("quarter_ends")
+            try:
+                artifact_grid = json.loads(artifact.read_text(encoding="utf-8")).get(
+                    "quarter_ends")
+            except (json.JSONDecodeError, OSError, AttributeError):
+                artifact_grid = None
+            for source_name, recorded_grid in (
+                ("artifact", artifact_grid), ("provenance", provenance_grid)
+            ):
+                if recorded_grid != expected_grid:
+                    findings.append(ValidationFinding(
+                        "COVERAGE WARNING", label,
+                        f"metrics {source_name} quarter grid does not match frozen grid "
+                        f"through {firm.sample_end}"))
     return findings
 
 

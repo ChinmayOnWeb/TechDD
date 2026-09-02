@@ -12,6 +12,7 @@ from git_due_diligence.panel.recovery import (
     load_manifest,
     provenance_path,
     recover_repository_metrics,
+    sha256_file,
     validate_runtime_artifacts,
     validation_succeeds,
     write_provenance,
@@ -60,7 +61,8 @@ coverage_caveat = "none"
     return path
 
 
-def _record(path: Path, kind: str, identity: str, *, tickers=None, head=None):
+def _record(path: Path, kind: str, identity: str, *, tickers=None, head=None,
+            quarter_ends=None):
     return write_provenance(
         path,
         artifact_type=kind,
@@ -70,7 +72,8 @@ def _record(path: Path, kind: str, identity: str, *, tickers=None, head=None):
         techdd_commit="a" * 40 if kind == "metrics" else None,
         source_repository_head=head,
         data_schema_version="v1",
-        extra={"tickers": tickers} if tickers else None,
+        extra=({"tickers": tickers} if tickers else
+               {"quarter_ends": quarter_ends} if quarter_ends is not None else None),
     )
 
 
@@ -81,8 +84,13 @@ def _complete_artifacts(tmp_path: Path):
     fundamentals.write_text('{"cik": 1, "facts": {}}', encoding="utf-8")
     _record(fundamentals, "fundamentals", "acme")
     metrics = cache / "metrics_acme.json"
-    metrics.write_text('{"head": "abc", "metrics": []}', encoding="utf-8")
-    _record(metrics, "metrics", "acme", head="abc")
+    quarter_ends = [
+        "2023-03-31", "2023-06-30", "2023-09-30", "2023-12-31",
+        "2024-03-31", "2024-06-30", "2024-09-30", "2024-12-31",
+    ]
+    metrics.write_text(json.dumps({"head": "abc", "quarter_ends": quarter_ends,
+                                   "metrics": []}), encoding="utf-8")
+    _record(metrics, "metrics", "acme", head="abc", quarter_ends=quarter_ends)
     prices = cache / "prices.csv"
     prices.write_text(
         "date,TICKER,PRC\n2023-01-01,ACME,10\n2024-12-31,ACME,11\n",
@@ -149,6 +157,37 @@ def test_hash_mismatch_fails_closed(tmp_path):
     findings = validate_runtime_artifacts(manifest, tmp_path)
     assert not validation_succeeds(findings)
     assert any(f.status == "HASH MISMATCH" for f in findings)
+
+
+def test_metrics_repository_head_must_match_frozen_manifest_sha(tmp_path):
+    manifest = load_manifest(_manifest(tmp_path))
+    _complete_artifacts(tmp_path)
+    firm = replace(manifest.firms[0], repository_head="a" * 40)
+    findings = validate_runtime_artifacts(replace(manifest, firms=(firm,)), tmp_path)
+    assert any(f.status == "IDENTITY WARNING" and "does not match frozen" in f.detail
+               for f in findings)
+    assert not validation_succeeds(findings)
+
+
+@pytest.mark.parametrize("record", ["artifact", "provenance"])
+def test_metrics_quarter_grid_must_match_frozen_manifest_grid(tmp_path, record):
+    manifest = load_manifest(_manifest(tmp_path))
+    _complete_artifacts(tmp_path)
+    metrics = tmp_path / "cache/metrics_acme.json"
+    metadata = json.loads(provenance_path(metrics).read_text(encoding="utf-8"))
+    if record == "artifact":
+        payload = json.loads(metrics.read_text(encoding="utf-8"))
+        payload["quarter_ends"] = payload["quarter_ends"][:-1]
+        metrics.write_text(json.dumps(payload), encoding="utf-8")
+        metadata["sha256"] = sha256_file(metrics)
+    else:
+        metadata["extra"]["quarter_ends"] = metadata["extra"]["quarter_ends"][:-1]
+    provenance_path(metrics).write_text(json.dumps(metadata), encoding="utf-8")
+
+    findings = validate_runtime_artifacts(manifest, tmp_path)
+    assert any(f.status == "COVERAGE WARNING" and
+               f"metrics {record} quarter grid" in f.detail for f in findings)
+    assert not validation_succeeds(findings)
 
 
 def _init_source(destination: Path) -> None:
