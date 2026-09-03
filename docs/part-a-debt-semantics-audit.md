@@ -159,7 +159,7 @@ No firm becomes GREEN: CRSP is still unverified, and every candidate retains at 
 
 ## 10. Primary sources and snapshot provenance
 
-CompanyFacts payloads were retrieved 2026-09-03. SHA-256 values identify the exact audit snapshot:
+CompanyFacts payloads were retrieved 2026-09-03. The exact deterministic bundle is durably stored as Git tag `part-a-debt-audit-companyfacts-2026-09-03`, which points to Git blob `326c38fe244a83589c2da7cf7bc10634224684a4`. Restore it with `git fetch --tags` followed by `git show part-a-debt-audit-companyfacts-2026-09-03^{blob} > companyfacts.tar.gz`; its SHA-256 is `6c72b93f3db358d1d21b080d41cda89b33ee7896664bcf01bc652f44b1905a68`. A clean restore was byte-identical. This evidence bundle is not a frozen-pilot or production panel input. Per-file SHA-256 values identify each payload:
 
 | CIK | Entity | CompanyFacts SHA-256 |
 |---|---|---|
@@ -191,4 +191,4 @@ Key immutable filing evidence:
 - MariaDB [fiscal-2023 10-K](https://www.sec.gov/Archives/edgar/data/1929589/000192958923000010/mrdb-20230930.htm) and [K1 transaction 8-K](https://www.sec.gov/Archives/edgar/data/1929589/000114036124037687/ef20034338_8k.htm).
 - Pivotal [fiscal-2019 10-K, revolving-facility note](https://www.sec.gov/Archives/edgar/data/1574135/000157413519000009/pvtl-20190201x10k.htm).
 
-The hashes make later drift detectable; the immutable accession documents preserve the underlying filed evidence. A durable copy of the aggregated CompanyFacts snapshots should accompany the eventual production evidence ledger rather than be silently treated as committed panel input in this audit PR.
+The durable bundle makes the extractor counts reproducible, its hashes make drift detectable, and the immutable accession documents preserve the underlying filed evidence. The eventual production evidence ledger must still register its own reviewed raw inputs rather than silently treating this audit snapshot as panel data.
