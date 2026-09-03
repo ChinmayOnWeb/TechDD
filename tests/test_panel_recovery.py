@@ -424,3 +424,19 @@ def test_price_coverage_uses_existing_zero_and_negative_semantics(tmp_path):
         "2023-01-02,ACME,-10\n2024-12-31,ACME,-11\n")
     warnings = _coverage_warnings(manifest, tmp_path)
     assert any("required start" in f.detail and "2023-01-02" in f.detail for f in warnings)
+
+
+def test_frozen_debt_ledger_hash_mismatch_fails_closed(tmp_path):
+    manifest = load_manifest(_manifest(tmp_path))
+    _complete_artifacts(tmp_path)
+    ledger = tmp_path / "debt.toml"
+    ledger.write_text("schema_version = 1\n", encoding="utf-8")
+    manifest = replace(
+        manifest,
+        debt_evidence_schema_version=1,
+        debt_evidence_artifact=Path("debt.toml"),
+        debt_evidence_sha256="0" * 64,
+    )
+    findings = validate_runtime_artifacts(manifest, tmp_path)
+    assert any(f.status == "HASH MISMATCH" and f.artifact == "debt.toml" for f in findings)
+    assert not validation_succeeds(findings)

@@ -124,12 +124,16 @@ def build(
     crsp: Path = typer.Option(None, "--crsp", exists=True, dir_okay=False,
                               help="CRSP daily-stock CSV export; used in preference to Stooq "
                                    "for any ticker it covers (required for delisted firms)"),
+    debt_evidence_path: Path = typer.Option(
+        Path("panel/debt_evidence.toml"), "--debt-evidence", exists=True,
+        dir_okay=False, help="Reviewed filing-backed debt evidence ledger"),
 ) -> None:
     """Build the firm-quarter panel CSV from local clones + EDGAR + prices."""
     _require_panel_extra()
     from git_due_diligence.panel.assemble import build_panel
     from git_due_diligence.panel.crsp import load_crsp_prices
     from git_due_diligence.panel.edgar import fetch_fundamentals
+    from git_due_diligence.panel.debt_evidence import load_debt_evidence, load_firm_identities
     from git_due_diligence.panel.metrics_cache import load_or_compute_metrics
     from git_due_diligence.panel.prices import quarter_end_prices, quarter_end_prices_from_series
     from git_due_diligence.panel.universe import fiscal_quarter_ends, load_universe
@@ -139,6 +143,9 @@ def build(
         typer.echo(f"CRSP: {len(crsp_prices)} tickers loaded from {crsp}")
 
     firms = load_universe(universe)
+    identities = load_firm_identities(Path("panel/candidate_universe.csv"))
+    identities.update({firm.slug: firm.cik for firm in firms})
+    debt_evidence = load_debt_evidence(debt_evidence_path, identities)
     metrics_by_slug: dict = {}
     fundamentals_by_slug: dict = {}
     prices_by_slug: dict = {}
@@ -153,7 +160,8 @@ def build(
         typer.echo(f"{firm.slug}: {len(quarter_ends)} fiscal quarters")
         metrics_by_slug[firm.slug] = load_or_compute_metrics(
             firm.slug, clone, quarter_ends, cache)
-        fundamentals_by_slug[firm.slug] = fetch_fundamentals(firm.cik, cache)
+        fundamentals_by_slug[firm.slug] = fetch_fundamentals(
+            firm.cik, cache, firm_slug=firm.slug, debt_evidence=debt_evidence)
         series = crsp_prices.get(firm.ticker.upper())
         if series:
             prices_by_slug[firm.slug] = quarter_end_prices_from_series(series, quarter_ends)
@@ -164,6 +172,49 @@ def build(
     panel.to_csv(output, index=False)
     n_firms = panel["firm"].nunique() if len(panel) else 0
     typer.echo(f"Panel written to {output}: {len(panel)} firm-quarters across {n_firms} firms")
+
+
+@panel_app.command("explain-debt")
+def explain_debt(
+    firm: str = typer.Option(..., "--firm"),
+    quarter: datetime = typer.Option(..., "--quarter", formats=["%Y-%m-%d"]),
+    manifest: Path = typer.Option(Path("panel/data_manifest.toml"), exists=True,
+                                  dir_okay=False),
+    ledger: Path = typer.Option(Path("panel/debt_evidence.toml"), exists=True,
+                                dir_okay=False),
+    root: Path = typer.Option(Path("."), exists=True, file_okay=False),
+) -> None:
+    """Explain the reported, filing-backed-zero, or unresolved debt source."""
+    from git_due_diligence.panel.debt_evidence import load_debt_evidence, load_firm_identities
+    from git_due_diligence.panel.edgar import fetch_fundamentals
+    from git_due_diligence.panel.recovery import load_manifest, select_manifest_firms
+
+    try:
+        selected = select_manifest_firms(load_manifest(manifest), firm)[0]
+        identities = load_firm_identities(root / "panel/candidate_universe.csv")
+        identities[selected.slug] = selected.cik
+        evidence = load_debt_evidence(ledger, identities)
+        rows = fetch_fundamentals(
+            selected.cik,
+            (root / selected.fundamentals_artifact).parent,
+            firm_slug=selected.slug,
+            debt_evidence=evidence,
+        )
+        target = quarter.date()
+        row = next((item for item in rows if item.quarter_end == target), None)
+    except (OSError, ValueError) as exc:
+        typer.echo(f"debt evidence invalid: {exc}", err=True)
+        raise typer.Exit(code=1)
+    if row is None or row.debt is None:
+        typer.echo(f"UNRESOLVED\t{firm}\t{target.isoformat()}\tno supported numeric debt fact or accepted zero assertion")
+    elif row.debt_status == "ZERO_SUPPORTED_BY_FILINGS":
+        typer.echo(
+            f"ZERO_SUPPORTED_BY_FILINGS\t{firm}\t{target.isoformat()}\t"
+            f"debt=0.0\taccession={row.debt_accession}")
+    else:
+        typer.echo(
+            f"{row.debt_status}\t{firm}\t{target.isoformat()}\tdebt={row.debt}\t"
+            f"concept={row.debt_concept}\taccession={row.debt_accession}")
 
 
 @panel_app.command()

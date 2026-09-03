@@ -130,3 +130,93 @@ def test_panel_regress_writes_result_tables(tmp_path):
     assert result.exit_code == 0, result.output
     assert (out_dir / "h1_pricing.txt").exists()
     assert "h1" in result.output
+
+
+def _write_explain_fixture(tmp_path, *, debt=100.0, ledger_record=False):
+    root = tmp_path / "root"
+    (root / "panel_cache").mkdir(parents=True)
+    (root / "panel").mkdir()
+    (root / "panel/candidate_universe.csv").write_text(
+        "slug,cik\nacme,0000000001\n", encoding="utf-8")
+    facts = _canned_edgar()
+    facts["facts"]["us-gaap"]["LongTermDebt"]["units"]["USD"] = (
+        [] if debt is None else [{"end": "2024-03-31", "val": debt,
+                                  "accn": "0000000001-24-000002"}])
+    (root / "panel_cache/edgar_CIK0000000001.json").write_text(
+        json.dumps(facts), encoding="utf-8")
+    manifest = tmp_path / "manifest.toml"
+    manifest.write_text('''schema_version = 1
++provenance_schema_version = 1
++metric_schema_version = "quarter-metrics-v1"
++[[firms]]
++slug="acme"
++name="Acme"
++ticker="ACME"
++cik="0000000001"
++repository_url="https://example.test/acme"
++repository_host="example.test"
++repository_attribution="test"
++repository_head="unavailable"
++tier="core"
++fiscal_year_end_month=12
++listing_start=2023-01-01
++listing_end="open"
++sample_end=2024-12-31
++permanent_security_id="unavailable"
++financial_source="SEC"
++fundamentals_artifact="panel_cache/edgar_CIK0000000001.json"
++price_source="CRSP"
++price_artifact="prices.csv"
++price_coverage_start=2023-01-01
++price_coverage_end=2024-12-31
++metrics_artifact="metrics.json"
++coverage_caveat="none"
++'''.replace("+", ""), encoding="utf-8")
+    ledger = tmp_path / "debt.toml"
+    record = '''
++[[records]]
++firm="acme"
++cik="0000000001"
++quarter_end=2024-03-31
++classification="ZERO_SUPPORTED_BY_FILINGS"
++accession="0000000001-24-000001"
++filing_date=2024-05-01
++filing_form="10-Q"
++evidence_location="balance sheet"
++evidence_note="facility had no balance"
++source_url="https://www.sec.gov/Archives/edgar/data/1/000000000124000001/"
++immutable_evidence_id="sec-accession:0000000001-24-000001"
++reviewer="reviewer"
++reviewed_at=2024-05-02T00:00:00Z
++'''.replace("+", "") if ledger_record else ""
+    ledger.write_text("schema_version = 1\n" + record, encoding="utf-8")
+    return root, manifest, ledger
+
+
+def test_explain_debt_identifies_reported_fact(tmp_path):
+    root, manifest, ledger = _write_explain_fixture(tmp_path)
+    result = runner.invoke(app, ["panel", "explain-debt", "--firm", "acme",
+        "--quarter", "2024-03-31", "--manifest", str(manifest),
+        "--ledger", str(ledger), "--root", str(root)])
+    assert result.exit_code == 0, result.output
+    assert "REPORTED_NONZERO" in result.output
+    assert "concept=LongTermDebt" in result.output
+
+
+def test_explain_debt_identifies_filing_backed_zero(tmp_path):
+    root, manifest, ledger = _write_explain_fixture(tmp_path, debt=None, ledger_record=True)
+    result = runner.invoke(app, ["panel", "explain-debt", "--firm", "acme",
+        "--quarter", "2024-03-31", "--manifest", str(manifest),
+        "--ledger", str(ledger), "--root", str(root)])
+    assert result.exit_code == 0, result.output
+    assert "ZERO_SUPPORTED_BY_FILINGS" in result.output
+    assert "0000000001-24-000001" in result.output
+
+
+def test_explain_debt_identifies_unresolved(tmp_path):
+    root, manifest, ledger = _write_explain_fixture(tmp_path, debt=None)
+    result = runner.invoke(app, ["panel", "explain-debt", "--firm", "acme",
+        "--quarter", "2024-03-31", "--manifest", str(manifest),
+        "--ledger", str(ledger), "--root", str(root)])
+    assert result.exit_code == 0, result.output
+    assert "UNRESOLVED" in result.output
