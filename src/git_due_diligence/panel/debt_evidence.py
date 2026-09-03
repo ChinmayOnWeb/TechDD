@@ -8,6 +8,7 @@ from __future__ import annotations
 import re
 import csv
 import tomllib
+from urllib.parse import urlsplit
 from dataclasses import dataclass
 from datetime import date, datetime
 from pathlib import Path
@@ -117,12 +118,22 @@ def load_debt_evidence(
             if not isinstance(entry[field], str) or not entry[field].strip():
                 raise ValueError(
                     f"debt evidence record {number} has empty provenance field {field}")
-        if accession.replace("-", "") not in entry["source_url"]:
+        expected_evidence_id = f"sec-accession:{accession}"
+        if entry["immutable_evidence_id"] != expected_evidence_id:
             raise ValueError(
-                f"debt evidence record {number} source_url does not identify accession")
-        if accession not in entry["immutable_evidence_id"]:
+                f"debt evidence record {number} immutable_evidence_id must equal "
+                f"{expected_evidence_id!r}")
+        source = urlsplit(entry["source_url"])
+        expected_prefix = (
+            "/Archives/edgar/data/"
+            f"{int(cik)}/{accession.replace('-', '')}/"
+        )
+        if (source.scheme != "https" or source.netloc != "www.sec.gov"
+                or not source.path.startswith(expected_prefix)
+                or source.query or source.fragment):
             raise ValueError(
-                f"debt evidence record {number} immutable_evidence_id does not identify accession")
+                f"debt evidence record {number} source_url must identify the canonical "
+                f"SEC Archives path {expected_prefix!r}")
         key = (firm, quarter)
         if key in result:
             raise ValueError(f"duplicate debt evidence for {firm} {quarter.isoformat()}")

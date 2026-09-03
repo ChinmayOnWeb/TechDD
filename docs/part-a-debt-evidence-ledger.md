@@ -60,7 +60,7 @@ The implementation must not infer zero from CompanyFacts absence, use issuer-nam
 
 ## Initial scope and remaining issues
 
-The initial records encode exact quarterly filing endpoints supported by the merged debt-semantics audit. The last proposed HashiCorp 2025-01-31 and Hortonworks 2018-12-31 endpoints are deliberately not asserted: the preserved CompanyFacts evidence has no exact-quarter filing for those acquisition-adjacent dates. This is the intended fail-closed outcome, not a completeness target.
+The reviewed ledger contains 78 exact-quarter records: GitLab 18, Hortonworks 16, Couchbase 15, HashiCorp 12, Cloudera 10, Elastic 4, Confluent 2, and MongoDB 1. The evidence review removed eleven candidates rather than replacing them: four wrong-period Cloudera mappings, six Elastic quarters contradicted by a tenant-improvement loan/notes payable, and GitLab 2022-04-30, when its consolidated JiHu VIE had an investor loan. The last proposed HashiCorp 2025-01-31 and Hortonworks 2018-12-31 endpoints also remain unasserted because the preserved evidence has no exact-quarter filing for those acquisition-adjacent dates. These are intended fail-closed outcomes, not completeness targets.
 
 MongoDB's post-conversion finance-lease liabilities remain outside numeric resolution until Part A preregisters whether finance leases belong in enterprise-value debt. MongoDB 2018-04-30 remains a matching/reconciliation question. Candidate current/combined debt and finance-lease concepts remain a separate extractor-reconciliation project because blindly merging totals and components can double count debt.
 
@@ -70,8 +70,8 @@ Using the preserved 2026-09-03 CompanyFacts bundle and applying only endpoint-le
 
 | Firm | Expected | Old usable | New usable | Remaining endpoint blocks |
 |---|---:|---:|---:|---|
-| Elastic | 31 | 21 | 31 | None at the fundamentals endpoint level. |
+| Elastic | 31 | 21 | 25 | Six early endpoints (2018-10 through 2020-01) remain blocked because contemporaneous filings report the tenant-improvement loan/notes payable. |
 | MongoDB | 35 | 19 | 19 | 2017-10 and 2018-01 through 2020-04 lack supported shares (11 endpoints; 2018-04 also lacks debt); 2025-04 through 2026-04 have unresolved debt under the current concept/perimeter contract (5 endpoints). |
-| GitLab | 19 | 0 | 19 | None at the fundamentals endpoint level. |
+| GitLab | 19 | 0 | 18 | 2022-04 remains blocked because the reviewed filing reports the consolidated JiHu investor loan. |
 
 These are not final panel-row counts. Four-quarter LTM matching, CRSP coverage, prices, and all other frozen assembly rules still apply, and no regressions were run.

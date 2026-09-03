@@ -57,7 +57,7 @@ def test_panel_help_lists_commands():
     assert "regress" in result.output
 
 
-def test_panel_build_runs_offline_from_cache(tmp_path):
+def test_panel_build_runs_offline_from_cache_outside_repository(tmp_path, monkeypatch):
     universe = tmp_path / "universe"
     universe.mkdir()
     (universe / "acme.toml").write_text(ACME_TOML, encoding="utf-8")
@@ -78,11 +78,14 @@ def test_panel_build_runs_offline_from_cache(tmp_path):
     cache.mkdir()
     (cache / "edgar_CIK0000000001.json").write_text(json.dumps(_canned_edgar()), encoding="utf-8")
     (cache / "stooq_acme.us.csv").write_text(STOOQ_CSV, encoding="utf-8")
+    ledger = tmp_path / "debt_evidence.toml"
+    ledger.write_text("schema_version = 1\n", encoding="utf-8")
 
     output = tmp_path / "panel.csv"
+    monkeypatch.chdir(tmp_path)
     result = runner.invoke(app, [
         "panel", "build", "--universe", str(universe), "--clones", str(clones),
-        "--cache", str(cache), "-o", str(output),
+        "--cache", str(cache), "--debt-evidence", str(ledger), "-o", str(output),
     ])
     assert result.exit_code == 0, result.output
     import pandas as pd

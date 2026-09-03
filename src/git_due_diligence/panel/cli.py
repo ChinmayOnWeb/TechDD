@@ -143,8 +143,10 @@ def build(
         typer.echo(f"CRSP: {len(crsp_prices)} tickers loaded from {crsp}")
 
     firms = load_universe(universe)
-    identities = load_firm_identities(Path("panel/candidate_universe.csv"))
-    identities.update({firm.slug: firm.cik for firm in firms})
+    identities = {firm.slug: firm.cik for firm in firms}
+    identity_path = debt_evidence_path.with_name("candidate_universe.csv")
+    if identity_path.is_file():
+        identities.update(load_firm_identities(identity_path))
     debt_evidence = load_debt_evidence(debt_evidence_path, identities)
     metrics_by_slug: dict = {}
     fundamentals_by_slug: dict = {}

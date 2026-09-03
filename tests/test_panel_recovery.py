@@ -440,3 +440,19 @@ def test_frozen_debt_ledger_hash_mismatch_fails_closed(tmp_path):
     findings = validate_runtime_artifacts(manifest, tmp_path)
     assert any(f.status == "HASH MISMATCH" and f.artifact == "debt.toml" for f in findings)
     assert not validation_succeeds(findings)
+
+
+def test_frozen_debt_ledger_is_available_when_hash_matches(tmp_path):
+    manifest = load_manifest(_manifest(tmp_path))
+    _complete_artifacts(tmp_path)
+    ledger = tmp_path / "debt.toml"
+    ledger.write_text("schema_version = 1\n", encoding="utf-8")
+    manifest = replace(
+        manifest,
+        debt_evidence_schema_version=1,
+        debt_evidence_artifact=Path("debt.toml"),
+        debt_evidence_sha256=sha256_file(ledger),
+    )
+    findings = validate_runtime_artifacts(manifest, tmp_path)
+    assert any(f.status == "AVAILABLE" and f.artifact == "debt.toml" for f in findings)
+    assert validation_succeeds(findings)

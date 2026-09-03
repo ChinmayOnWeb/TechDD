@@ -76,6 +76,24 @@ def test_missing_required_provenance_rejected(tmp_path):
         _load(tmp_path, body)
 
 
+@pytest.mark.parametrize("source_url", [
+    '"http://www.sec.gov/Archives/edgar/data/1/000000000124000001/"',
+    '"https://sec.gov/Archives/edgar/data/1/000000000124000001/"',
+    '"https://www.sec.gov.example/Archives/edgar/data/1/000000000124000001/"',
+    '"https://www.sec.gov/Archives/edgar/data/2/000000000124000001/"',
+    '"https://www.sec.gov/Archives/edgar/data/1/999999999924000001/000000000124000001/"',
+])
+def test_noncanonical_sec_source_url_rejected(tmp_path, source_url):
+    with pytest.raises(ValueError, match="canonical SEC Archives path"):
+        _load(tmp_path, _ledger(source_url=source_url))
+
+
+def test_immutable_evidence_id_must_exactly_match_accession(tmp_path):
+    with pytest.raises(ValueError, match="immutable_evidence_id must equal"):
+        _load(tmp_path, _ledger(
+            immutable_evidence_id='"prefix:0000000001-24-000001:suffix"'))
+
+
 @pytest.mark.parametrize(("reported", "status", "expected"), [
     (100.0, None, 100.0),
     (0.0, None, 0.0),
