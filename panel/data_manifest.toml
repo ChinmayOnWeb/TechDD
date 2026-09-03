@@ -1,6 +1,9 @@
 schema_version = 1
 provenance_schema_version = 1
 metric_schema_version = "quarter-metrics-v1"
+debt_evidence_schema_version = 1
+debt_evidence_artifact = "panel/debt_evidence.toml"
+debt_evidence_sha256 = "16fe6a124bfcdf19b834f93dad4295def15627680f909b6c50f59f978d21f334"
 
 [[firms]]
 slug = "elastic"

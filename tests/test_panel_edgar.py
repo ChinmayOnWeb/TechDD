@@ -150,3 +150,25 @@ def test_companyfacts_cached_after_first_fetch(tmp_path):
     assert len(calls) == 1
     assert calls[0] == "https://data.sec.gov/api/xbrl/companyfacts/CIK0000000001.json"
     assert (tmp_path / "edgar_CIK0000000001.json").exists()
+
+
+def test_filing_backed_zero_is_applied_only_to_exact_quarter(tmp_path):
+    from git_due_diligence.panel.debt_evidence import DebtEvidence
+    from datetime import datetime, timezone
+
+    evidence = DebtEvidence(
+        firm="acme", cik="0000000001", quarter_end=date(2024, 4, 30),
+        classification="ZERO_SUPPORTED_BY_FILINGS",
+        accession="0000000001-24-000001", filing_date=date(2024, 5, 1),
+        filing_form="10-Q", evidence_location="balance sheet", evidence_note="no debt",
+        source_url="https://example.test/000000000124000001/",
+        immutable_evidence_id="sec-accession:0000000001-24-000001",
+        reviewer="reviewer", reviewed_at=datetime(2024, 5, 2, tzinfo=timezone.utc),
+    )
+    rows = fetch_fundamentals(
+        "0000000001", tmp_path, fetch=_fake_fetch([]), firm_slug="acme",
+        debt_evidence={("acme", date(2024, 4, 30)): evidence})
+    assert rows[0].debt == 0.0
+    assert rows[0].debt_status == "ZERO_SUPPORTED_BY_FILINGS"
+    assert rows[0].debt_accession == evidence.accession
+    assert rows[1].debt is None

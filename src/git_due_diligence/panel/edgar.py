@@ -6,6 +6,8 @@ from datetime import date
 from pathlib import Path
 from typing import Callable
 
+from git_due_diligence.panel.debt_evidence import DebtEvidence, resolve_debt
+
 EDGAR_COMPANYFACTS_URL = "https://data.sec.gov/api/xbrl/companyfacts/CIK{cik}.json"
 USER_AGENT = "git-due-diligence research contact: chinmay.patil1@gmail.com"
 
@@ -39,6 +41,9 @@ class QuarterFundamentals:
     cash: float | None
     debt: float | None
     shares_outstanding: float | None
+    debt_status: str = "UNRESOLVED"
+    debt_concept: str | None = None
+    debt_accession: str | None = None
 
 
 def _default_fetch(url: str) -> str:
@@ -56,6 +61,19 @@ def fetch_companyfacts(cik: str, cache_dir: Path,
     if not cache_file.exists():
         cache_file.write_text(fetch(EDGAR_COMPANYFACTS_URL.format(cik=cik)), encoding="utf-8")
     return json.loads(cache_file.read_text(encoding="utf-8"))
+
+
+def load_companyfacts(path: Path) -> dict:
+    """Read an exact, caller-selected CompanyFacts artifact without fetching."""
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError as exc:
+        raise ValueError(f"declared CompanyFacts artifact is missing: {path}") from exc
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ValueError(f"declared CompanyFacts artifact is invalid: {path}: {exc}") from exc
+    if not isinstance(payload, dict):
+        raise ValueError(f"declared CompanyFacts artifact is invalid: {path}: expected object")
+    return payload
 
 
 def _duration_series(section: dict, tags: list[str],
@@ -132,6 +150,23 @@ def _merged_instant_series(section: dict, tags: list[str], unit: str) -> dict[da
     return merged
 
 
+def _merged_instant_sources(section: dict, tags: list[str], unit: str) -> dict[date, tuple[str, str | None]]:
+    sources: dict[date, tuple[str, str | None]] = {}
+    for tag in tags:
+        for entry in section.get(tag, {}).get("units", {}).get(unit, []):
+            if "start" not in entry:
+                sources.setdefault(
+                    date.fromisoformat(entry["end"]), (tag, entry.get("accn")))
+    return sources
+
+
+def _nearest_key(series: dict[date, object], target: date) -> date | None:
+    if not series:
+        return None
+    best = min(series, key=lambda d: abs((d - target).days))
+    return best if abs((best - target).days) <= _INSTANT_TOLERANCE_DAYS else None
+
+
 def _shares_series(gaap: dict, dei: dict) -> dict[date, float]:
     """Prefer the DEI instant tag; fall back to a duration-tag (weighted-average
     share count from 10-Q/10-K) keyed by period end when the instant is absent."""
@@ -159,9 +194,26 @@ def _nearest(series: dict[date, float], target: date) -> float | None:
     return series[best]
 
 
-def fetch_fundamentals(cik: str, cache_dir: Path,
-                       fetch: Callable[[str], str] = _default_fetch) -> list[QuarterFundamentals]:
+def fetch_fundamentals(
+    cik: str,
+    cache_dir: Path,
+    fetch: Callable[[str], str] = _default_fetch,
+    *,
+    firm_slug: str | None = None,
+    debt_evidence: dict[tuple[str, date], DebtEvidence] | None = None,
+) -> list[QuarterFundamentals]:
     facts = fetch_companyfacts(cik, cache_dir, fetch)
+    return fundamentals_from_companyfacts(
+        facts, firm_slug=firm_slug, debt_evidence=debt_evidence)
+
+
+def fundamentals_from_companyfacts(
+    facts: dict,
+    *,
+    firm_slug: str | None = None,
+    debt_evidence: dict[tuple[str, date], DebtEvidence] | None = None,
+) -> list[QuarterFundamentals]:
+    """Extract fundamentals from an already selected CompanyFacts payload."""
     gaap = facts.get("facts", {}).get("us-gaap", {})
     dei = facts.get("facts", {}).get("dei", {})
 
@@ -175,16 +227,25 @@ def fetch_fundamentals(cik: str, cache_dir: Path,
     )
     cash = _instant_series(gaap, _CASH_TAGS, "USD")
     debt = _merged_instant_series(gaap, _DEBT_TAGS, "USD")
+    debt_sources = _merged_instant_sources(gaap, _DEBT_TAGS, "USD")
     shares = _shares_series(gaap, dei)
 
-    return [
-        QuarterFundamentals(
+    rows = []
+    for q_end, rev in sorted(revenue.items()):
+        reported = _nearest(debt, q_end)
+        evidence = debt_evidence.get((firm_slug, q_end)) if debt_evidence and firm_slug else None
+        resolved, status = resolve_debt(reported, evidence)
+        source_key = _nearest_key(debt_sources, q_end)
+        source = debt_sources[source_key] if reported is not None and source_key else (None, None)
+        rows.append(QuarterFundamentals(
             quarter_end=q_end,
             revenue=rev,
             operating_income=operating_income.get(q_end),
             cash=_nearest(cash, q_end),
-            debt=_nearest(debt, q_end),
+            debt=resolved,
             shares_outstanding=_nearest(shares, q_end),
-        )
-        for q_end, rev in sorted(revenue.items())
-    ]
+            debt_status=status,
+            debt_concept=source[0],
+            debt_accession=source[1] if source[1] else evidence.accession if evidence else None,
+        ))
+    return rows

@@ -1,0 +1,1172 @@
+schema_version = 1
+
+[[records]]
+firm = "gitlab"
+cik = "0001653482"
+quarter_end = 2021-10-31
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001628280-21-024605"
+filing_date = 2021-12-07
+filing_form = "10-Q"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Balance sheet and credit-facility disclosure show the pre-IPO line terminated unused and no outstanding borrowing."
+source_url = "https://www.sec.gov/Archives/edgar/data/1653482/000162828021024605/"
+immutable_evidence_id = "sec-accession:0001628280-21-024605"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "gitlab"
+cik = "0001653482"
+quarter_end = 2022-01-31
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001628280-22-008836"
+filing_date = 2022-04-08
+filing_form = "10-K"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Balance sheet and credit-facility disclosure show the pre-IPO line terminated unused and no outstanding borrowing."
+source_url = "https://www.sec.gov/Archives/edgar/data/1653482/000162828022008836/"
+immutable_evidence_id = "sec-accession:0001628280-22-008836"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "gitlab"
+cik = "0001653482"
+quarter_end = 2022-07-31
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001628280-22-024415"
+filing_date = 2022-09-07
+filing_form = "10-Q"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Balance sheet and credit-facility disclosure show the pre-IPO line terminated unused and no outstanding borrowing."
+source_url = "https://www.sec.gov/Archives/edgar/data/1653482/000162828022024415/"
+immutable_evidence_id = "sec-accession:0001628280-22-024415"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "gitlab"
+cik = "0001653482"
+quarter_end = 2022-10-31
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001628280-22-031412"
+filing_date = 2022-12-06
+filing_form = "10-Q"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Balance sheet and credit-facility disclosure show the pre-IPO line terminated unused and no outstanding borrowing."
+source_url = "https://www.sec.gov/Archives/edgar/data/1653482/000162828022031412/"
+immutable_evidence_id = "sec-accession:0001628280-22-031412"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "gitlab"
+cik = "0001653482"
+quarter_end = 2023-01-31
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001628280-23-009925"
+filing_date = 2023-03-30
+filing_form = "10-K"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Balance sheet and credit-facility disclosure show the pre-IPO line terminated unused and no outstanding borrowing."
+source_url = "https://www.sec.gov/Archives/edgar/data/1653482/000162828023009925/"
+immutable_evidence_id = "sec-accession:0001628280-23-009925"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "gitlab"
+cik = "0001653482"
+quarter_end = 2023-04-30
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001628280-23-020942"
+filing_date = 2023-06-06
+filing_form = "10-Q"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Balance sheet and credit-facility disclosure show the pre-IPO line terminated unused and no outstanding borrowing."
+source_url = "https://www.sec.gov/Archives/edgar/data/1653482/000162828023020942/"
+immutable_evidence_id = "sec-accession:0001628280-23-020942"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "gitlab"
+cik = "0001653482"
+quarter_end = 2023-07-31
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001628280-23-031433"
+filing_date = 2023-09-06
+filing_form = "10-Q"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Balance sheet and credit-facility disclosure show the pre-IPO line terminated unused and no outstanding borrowing."
+source_url = "https://www.sec.gov/Archives/edgar/data/1653482/000162828023031433/"
+immutable_evidence_id = "sec-accession:0001628280-23-031433"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "gitlab"
+cik = "0001653482"
+quarter_end = 2023-10-31
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001628280-23-040671"
+filing_date = 2023-12-05
+filing_form = "10-Q"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Balance sheet and credit-facility disclosure show the pre-IPO line terminated unused and no outstanding borrowing."
+source_url = "https://www.sec.gov/Archives/edgar/data/1653482/000162828023040671/"
+immutable_evidence_id = "sec-accession:0001628280-23-040671"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "gitlab"
+cik = "0001653482"
+quarter_end = 2024-01-31
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001628280-24-012963"
+filing_date = 2024-03-26
+filing_form = "10-K"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Balance sheet and credit-facility disclosure show the pre-IPO line terminated unused and no outstanding borrowing."
+source_url = "https://www.sec.gov/Archives/edgar/data/1653482/000162828024012963/"
+immutable_evidence_id = "sec-accession:0001628280-24-012963"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "gitlab"
+cik = "0001653482"
+quarter_end = 2024-04-30
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001628280-24-026458"
+filing_date = 2024-06-04
+filing_form = "10-Q"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Balance sheet and credit-facility disclosure show the pre-IPO line terminated unused and no outstanding borrowing."
+source_url = "https://www.sec.gov/Archives/edgar/data/1653482/000162828024026458/"
+immutable_evidence_id = "sec-accession:0001628280-24-026458"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "gitlab"
+cik = "0001653482"
+quarter_end = 2024-07-31
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001628280-24-039196"
+filing_date = 2024-09-04
+filing_form = "10-Q"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Balance sheet and credit-facility disclosure show the pre-IPO line terminated unused and no outstanding borrowing."
+source_url = "https://www.sec.gov/Archives/edgar/data/1653482/000162828024039196/"
+immutable_evidence_id = "sec-accession:0001628280-24-039196"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "gitlab"
+cik = "0001653482"
+quarter_end = 2024-10-31
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001628280-24-050129"
+filing_date = 2024-12-06
+filing_form = "10-Q"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Balance sheet and credit-facility disclosure show the pre-IPO line terminated unused and no outstanding borrowing."
+source_url = "https://www.sec.gov/Archives/edgar/data/1653482/000162828024050129/"
+immutable_evidence_id = "sec-accession:0001628280-24-050129"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "gitlab"
+cik = "0001653482"
+quarter_end = 2025-01-31
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001628280-25-014344"
+filing_date = 2025-03-21
+filing_form = "10-K"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Balance sheet and credit-facility disclosure show the pre-IPO line terminated unused and no outstanding borrowing."
+source_url = "https://www.sec.gov/Archives/edgar/data/1653482/000162828025014344/"
+immutable_evidence_id = "sec-accession:0001628280-25-014344"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "gitlab"
+cik = "0001653482"
+quarter_end = 2025-04-30
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001628280-25-030546"
+filing_date = 2025-06-11
+filing_form = "10-Q"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Balance sheet and credit-facility disclosure show the pre-IPO line terminated unused and no outstanding borrowing."
+source_url = "https://www.sec.gov/Archives/edgar/data/1653482/000162828025030546/"
+immutable_evidence_id = "sec-accession:0001628280-25-030546"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "gitlab"
+cik = "0001653482"
+quarter_end = 2025-07-31
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001653482-25-000010"
+filing_date = 2025-09-04
+filing_form = "10-Q"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Balance sheet and credit-facility disclosure show the pre-IPO line terminated unused and no outstanding borrowing."
+source_url = "https://www.sec.gov/Archives/edgar/data/1653482/000165348225000010/"
+immutable_evidence_id = "sec-accession:0001653482-25-000010"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "gitlab"
+cik = "0001653482"
+quarter_end = 2025-10-31
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001628280-25-054840"
+filing_date = 2025-12-03
+filing_form = "10-Q"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Balance sheet and credit-facility disclosure show the pre-IPO line terminated unused and no outstanding borrowing."
+source_url = "https://www.sec.gov/Archives/edgar/data/1653482/000162828025054840/"
+immutable_evidence_id = "sec-accession:0001628280-25-054840"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "gitlab"
+cik = "0001653482"
+quarter_end = 2026-01-31
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001628280-26-018731"
+filing_date = 2026-03-17
+filing_form = "10-K"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Balance sheet and credit-facility disclosure show the pre-IPO line terminated unused and no outstanding borrowing."
+source_url = "https://www.sec.gov/Archives/edgar/data/1653482/000162828026018731/"
+immutable_evidence_id = "sec-accession:0001628280-26-018731"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "gitlab"
+cik = "0001653482"
+quarter_end = 2026-04-30
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001628280-26-039793"
+filing_date = 2026-06-02
+filing_form = "10-Q"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Balance sheet and credit-facility disclosure show the pre-IPO line terminated unused and no outstanding borrowing."
+source_url = "https://www.sec.gov/Archives/edgar/data/1653482/000162828026039793/"
+immutable_evidence_id = "sec-accession:0001628280-26-039793"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "hashicorp"
+cik = "0001720671"
+quarter_end = 2022-01-31
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0000950170-22-004668"
+filing_date = 2022-03-25
+filing_form = "10-K"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Balance sheet and revolving-credit-facility disclosure report no outstanding balance."
+source_url = "https://www.sec.gov/Archives/edgar/data/1720671/000095017022004668/"
+immutable_evidence_id = "sec-accession:0000950170-22-004668"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "hashicorp"
+cik = "0001720671"
+quarter_end = 2022-04-30
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0000950170-22-011388"
+filing_date = 2022-06-09
+filing_form = "10-Q"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Balance sheet and revolving-credit-facility disclosure report no outstanding balance."
+source_url = "https://www.sec.gov/Archives/edgar/data/1720671/000095017022011388/"
+immutable_evidence_id = "sec-accession:0000950170-22-011388"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "hashicorp"
+cik = "0001720671"
+quarter_end = 2022-07-31
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0000950170-22-018066"
+filing_date = 2022-09-02
+filing_form = "10-Q"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Balance sheet and revolving-credit-facility disclosure report no outstanding balance."
+source_url = "https://www.sec.gov/Archives/edgar/data/1720671/000095017022018066/"
+immutable_evidence_id = "sec-accession:0000950170-22-018066"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "hashicorp"
+cik = "0001720671"
+quarter_end = 2022-10-31
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0000950170-22-026148"
+filing_date = 2022-12-07
+filing_form = "10-Q"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Balance sheet and revolving-credit-facility disclosure report no outstanding balance."
+source_url = "https://www.sec.gov/Archives/edgar/data/1720671/000095017022026148/"
+immutable_evidence_id = "sec-accession:0000950170-22-026148"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "hashicorp"
+cik = "0001720671"
+quarter_end = 2023-01-31
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001628280-23-009241"
+filing_date = 2023-03-27
+filing_form = "10-K"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Balance sheet and revolving-credit-facility disclosure report no outstanding balance."
+source_url = "https://www.sec.gov/Archives/edgar/data/1720671/000162828023009241/"
+immutable_evidence_id = "sec-accession:0001628280-23-009241"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "hashicorp"
+cik = "0001720671"
+quarter_end = 2023-04-30
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001628280-23-021271"
+filing_date = 2023-06-07
+filing_form = "10-Q"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Balance sheet and revolving-credit-facility disclosure report no outstanding balance."
+source_url = "https://www.sec.gov/Archives/edgar/data/1720671/000162828023021271/"
+immutable_evidence_id = "sec-accession:0001628280-23-021271"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "hashicorp"
+cik = "0001720671"
+quarter_end = 2023-07-31
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001628280-23-031141"
+filing_date = 2023-08-31
+filing_form = "10-Q"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Balance sheet and revolving-credit-facility disclosure report no outstanding balance."
+source_url = "https://www.sec.gov/Archives/edgar/data/1720671/000162828023031141/"
+immutable_evidence_id = "sec-accession:0001628280-23-031141"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "hashicorp"
+cik = "0001720671"
+quarter_end = 2023-10-31
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001628280-23-041061"
+filing_date = 2023-12-07
+filing_form = "10-Q"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Balance sheet and revolving-credit-facility disclosure report no outstanding balance."
+source_url = "https://www.sec.gov/Archives/edgar/data/1720671/000162828023041061/"
+immutable_evidence_id = "sec-accession:0001628280-23-041061"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "hashicorp"
+cik = "0001720671"
+quarter_end = 2024-01-31
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001628280-24-012350"
+filing_date = 2024-03-21
+filing_form = "10-K"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Balance sheet and revolving-credit-facility disclosure report no outstanding balance."
+source_url = "https://www.sec.gov/Archives/edgar/data/1720671/000162828024012350/"
+immutable_evidence_id = "sec-accession:0001628280-24-012350"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "hashicorp"
+cik = "0001720671"
+quarter_end = 2024-04-30
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001628280-24-025771"
+filing_date = 2024-05-30
+filing_form = "10-Q"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Balance sheet and revolving-credit-facility disclosure report no outstanding balance."
+source_url = "https://www.sec.gov/Archives/edgar/data/1720671/000162828024025771/"
+immutable_evidence_id = "sec-accession:0001628280-24-025771"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "hashicorp"
+cik = "0001720671"
+quarter_end = 2024-07-31
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001720671-24-000017"
+filing_date = 2024-08-29
+filing_form = "10-Q"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Balance sheet and revolving-credit-facility disclosure report no outstanding balance."
+source_url = "https://www.sec.gov/Archives/edgar/data/1720671/000172067124000017/"
+immutable_evidence_id = "sec-accession:0001720671-24-000017"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "hashicorp"
+cik = "0001720671"
+quarter_end = 2024-10-31
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001720671-24-000023"
+filing_date = 2024-12-05
+filing_form = "10-Q"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Balance sheet and revolving-credit-facility disclosure report no outstanding balance."
+source_url = "https://www.sec.gov/Archives/edgar/data/1720671/000172067124000023/"
+immutable_evidence_id = "sec-accession:0001720671-24-000023"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "couchbase"
+cik = "0001845022"
+quarter_end = 2021-10-31
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001564590-21-060033"
+filing_date = 2021-12-10
+filing_form = "10-Q"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Balance sheet and revolving-facility disclosure show the prior borrowing repaid and no debt outstanding."
+source_url = "https://www.sec.gov/Archives/edgar/data/1845022/000156459021060033/"
+immutable_evidence_id = "sec-accession:0001564590-21-060033"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "couchbase"
+cik = "0001845022"
+quarter_end = 2022-04-30
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001845022-22-000057"
+filing_date = 2022-06-10
+filing_form = "10-Q"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Balance sheet and revolving-facility disclosure show the prior borrowing repaid and no debt outstanding."
+source_url = "https://www.sec.gov/Archives/edgar/data/1845022/000184502222000057/"
+immutable_evidence_id = "sec-accession:0001845022-22-000057"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "couchbase"
+cik = "0001845022"
+quarter_end = 2022-07-31
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001845022-22-000085"
+filing_date = 2022-09-09
+filing_form = "10-Q"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Balance sheet and revolving-facility disclosure show the prior borrowing repaid and no debt outstanding."
+source_url = "https://www.sec.gov/Archives/edgar/data/1845022/000184502222000085/"
+immutable_evidence_id = "sec-accession:0001845022-22-000085"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "couchbase"
+cik = "0001845022"
+quarter_end = 2022-10-31
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001845022-22-000101"
+filing_date = 2022-12-12
+filing_form = "10-Q"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Balance sheet and revolving-facility disclosure show the prior borrowing repaid and no debt outstanding."
+source_url = "https://www.sec.gov/Archives/edgar/data/1845022/000184502222000101/"
+immutable_evidence_id = "sec-accession:0001845022-22-000101"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "couchbase"
+cik = "0001845022"
+quarter_end = 2023-01-31
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001845022-23-000038"
+filing_date = 2023-03-29
+filing_form = "10-K"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Balance sheet and revolving-facility disclosure show the prior borrowing repaid and no debt outstanding."
+source_url = "https://www.sec.gov/Archives/edgar/data/1845022/000184502223000038/"
+immutable_evidence_id = "sec-accession:0001845022-23-000038"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "couchbase"
+cik = "0001845022"
+quarter_end = 2023-04-30
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001845022-23-000078"
+filing_date = 2023-06-07
+filing_form = "10-Q"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Balance sheet and revolving-facility disclosure show the prior borrowing repaid and no debt outstanding."
+source_url = "https://www.sec.gov/Archives/edgar/data/1845022/000184502223000078/"
+immutable_evidence_id = "sec-accession:0001845022-23-000078"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "couchbase"
+cik = "0001845022"
+quarter_end = 2023-07-31
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001845022-23-000087"
+filing_date = 2023-09-07
+filing_form = "10-Q"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Balance sheet and revolving-facility disclosure show the prior borrowing repaid and no debt outstanding."
+source_url = "https://www.sec.gov/Archives/edgar/data/1845022/000184502223000087/"
+immutable_evidence_id = "sec-accession:0001845022-23-000087"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "couchbase"
+cik = "0001845022"
+quarter_end = 2023-10-31
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001845022-23-000099"
+filing_date = 2023-12-07
+filing_form = "10-Q"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Balance sheet and revolving-facility disclosure show the prior borrowing repaid and no debt outstanding."
+source_url = "https://www.sec.gov/Archives/edgar/data/1845022/000184502223000099/"
+immutable_evidence_id = "sec-accession:0001845022-23-000099"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "couchbase"
+cik = "0001845022"
+quarter_end = 2024-01-31
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001845022-24-000020"
+filing_date = 2024-03-26
+filing_form = "10-K"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Balance sheet and revolving-facility disclosure show the prior borrowing repaid and no debt outstanding."
+source_url = "https://www.sec.gov/Archives/edgar/data/1845022/000184502224000020/"
+immutable_evidence_id = "sec-accession:0001845022-24-000020"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "couchbase"
+cik = "0001845022"
+quarter_end = 2024-04-30
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001845022-24-000072"
+filing_date = 2024-06-06
+filing_form = "10-Q"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Balance sheet and revolving-facility disclosure show the prior borrowing repaid and no debt outstanding."
+source_url = "https://www.sec.gov/Archives/edgar/data/1845022/000184502224000072/"
+immutable_evidence_id = "sec-accession:0001845022-24-000072"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "couchbase"
+cik = "0001845022"
+quarter_end = 2024-07-31
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001845022-24-000093"
+filing_date = 2024-09-05
+filing_form = "10-Q"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Balance sheet and revolving-facility disclosure show the prior borrowing repaid and no debt outstanding."
+source_url = "https://www.sec.gov/Archives/edgar/data/1845022/000184502224000093/"
+immutable_evidence_id = "sec-accession:0001845022-24-000093"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "couchbase"
+cik = "0001845022"
+quarter_end = 2024-10-31
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001845022-24-000114"
+filing_date = 2024-12-04
+filing_form = "10-Q"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Balance sheet and revolving-facility disclosure show the prior borrowing repaid and no debt outstanding."
+source_url = "https://www.sec.gov/Archives/edgar/data/1845022/000184502224000114/"
+immutable_evidence_id = "sec-accession:0001845022-24-000114"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "couchbase"
+cik = "0001845022"
+quarter_end = 2025-01-31
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001845022-25-000026"
+filing_date = 2025-03-25
+filing_form = "10-K"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Balance sheet and revolving-facility disclosure show the prior borrowing repaid and no debt outstanding."
+source_url = "https://www.sec.gov/Archives/edgar/data/1845022/000184502225000026/"
+immutable_evidence_id = "sec-accession:0001845022-25-000026"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "couchbase"
+cik = "0001845022"
+quarter_end = 2025-04-30
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001845022-25-000064"
+filing_date = 2025-06-04
+filing_form = "10-Q"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Balance sheet and revolving-facility disclosure show the prior borrowing repaid and no debt outstanding."
+source_url = "https://www.sec.gov/Archives/edgar/data/1845022/000184502225000064/"
+immutable_evidence_id = "sec-accession:0001845022-25-000064"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "couchbase"
+cik = "0001845022"
+quarter_end = 2025-07-31
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001845022-25-000091"
+filing_date = 2025-09-04
+filing_form = "10-Q"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Balance sheet and revolving-facility disclosure show the prior borrowing repaid and no debt outstanding."
+source_url = "https://www.sec.gov/Archives/edgar/data/1845022/000184502225000091/"
+immutable_evidence_id = "sec-accession:0001845022-25-000091"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "confluent"
+cik = "0001699838"
+quarter_end = 2021-06-30
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0000950170-21-000956"
+filing_date = 2021-08-05
+filing_form = "10-Q"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Pre-convertible-note balance sheet and financing disclosures show no outstanding borrowing."
+source_url = "https://www.sec.gov/Archives/edgar/data/1699838/000095017021000956/"
+immutable_evidence_id = "sec-accession:0000950170-21-000956"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "confluent"
+cik = "0001699838"
+quarter_end = 2021-09-30
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0000950170-21-003110"
+filing_date = 2021-11-04
+filing_form = "10-Q"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Pre-convertible-note balance sheet and financing disclosures show no outstanding borrowing."
+source_url = "https://www.sec.gov/Archives/edgar/data/1699838/000095017021003110/"
+immutable_evidence_id = "sec-accession:0000950170-21-003110"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "elastic"
+cik = "0001707753"
+quarter_end = 2020-04-30
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001628280-20-009982"
+filing_date = 2020-06-26
+filing_form = "10-K"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Pre-senior-notes balance sheet and financing disclosures show no outstanding borrowing."
+source_url = "https://www.sec.gov/Archives/edgar/data/1707753/000162828020009982/"
+immutable_evidence_id = "sec-accession:0001628280-20-009982"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "elastic"
+cik = "0001707753"
+quarter_end = 2020-07-31
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001707753-20-000018"
+filing_date = 2020-09-03
+filing_form = "10-Q"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Pre-senior-notes balance sheet and financing disclosures show no outstanding borrowing."
+source_url = "https://www.sec.gov/Archives/edgar/data/1707753/000170775320000018/"
+immutable_evidence_id = "sec-accession:0001707753-20-000018"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "elastic"
+cik = "0001707753"
+quarter_end = 2020-10-31
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001707753-20-000032"
+filing_date = 2020-12-07
+filing_form = "10-Q"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Pre-senior-notes balance sheet and financing disclosures show no outstanding borrowing."
+source_url = "https://www.sec.gov/Archives/edgar/data/1707753/000170775320000032/"
+immutable_evidence_id = "sec-accession:0001707753-20-000032"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "elastic"
+cik = "0001707753"
+quarter_end = 2021-01-31
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001707753-21-000012"
+filing_date = 2021-03-03
+filing_form = "10-Q"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Pre-senior-notes balance sheet and financing disclosures show no outstanding borrowing."
+source_url = "https://www.sec.gov/Archives/edgar/data/1707753/000170775321000012/"
+immutable_evidence_id = "sec-accession:0001707753-21-000012"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "hortonworks"
+cik = "0001610532"
+quarter_end = 2014-12-31
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001193125-16-505199"
+filing_date = 2016-03-15
+filing_form = "10-K"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Balance sheet and revolving-credit-facility note report no outstanding borrowings."
+source_url = "https://www.sec.gov/Archives/edgar/data/1610532/000119312516505199/"
+immutable_evidence_id = "sec-accession:0001193125-16-505199"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "hortonworks"
+cik = "0001610532"
+quarter_end = 2015-03-31
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001193125-15-188218"
+filing_date = 2015-05-14
+filing_form = "10-Q"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Balance sheet and revolving-credit-facility note report no outstanding borrowings."
+source_url = "https://www.sec.gov/Archives/edgar/data/1610532/000119312515188218/"
+immutable_evidence_id = "sec-accession:0001193125-15-188218"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "hortonworks"
+cik = "0001610532"
+quarter_end = 2015-06-30
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001193125-15-290040"
+filing_date = 2015-08-13
+filing_form = "10-Q"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Balance sheet and revolving-credit-facility note report no outstanding borrowings."
+source_url = "https://www.sec.gov/Archives/edgar/data/1610532/000119312515290040/"
+immutable_evidence_id = "sec-accession:0001193125-15-290040"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "hortonworks"
+cik = "0001610532"
+quarter_end = 2015-09-30
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001193125-15-375689"
+filing_date = 2015-11-12
+filing_form = "10-Q"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Balance sheet and revolving-credit-facility note report no outstanding borrowings."
+source_url = "https://www.sec.gov/Archives/edgar/data/1610532/000119312515375689/"
+immutable_evidence_id = "sec-accession:0001193125-15-375689"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "hortonworks"
+cik = "0001610532"
+quarter_end = 2015-12-31
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001193125-16-505199"
+filing_date = 2016-03-15
+filing_form = "10-K"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Balance sheet and revolving-credit-facility note report no outstanding borrowings."
+source_url = "https://www.sec.gov/Archives/edgar/data/1610532/000119312516505199/"
+immutable_evidence_id = "sec-accession:0001193125-16-505199"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "hortonworks"
+cik = "0001610532"
+quarter_end = 2016-03-31
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001193125-16-583816"
+filing_date = 2016-05-09
+filing_form = "10-Q"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Balance sheet and revolving-credit-facility note report no outstanding borrowings."
+source_url = "https://www.sec.gov/Archives/edgar/data/1610532/000119312516583816/"
+immutable_evidence_id = "sec-accession:0001193125-16-583816"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "hortonworks"
+cik = "0001610532"
+quarter_end = 2016-06-30
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001193125-16-676731"
+filing_date = 2016-08-09
+filing_form = "10-Q"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Balance sheet and revolving-credit-facility note report no outstanding borrowings."
+source_url = "https://www.sec.gov/Archives/edgar/data/1610532/000119312516676731/"
+immutable_evidence_id = "sec-accession:0001193125-16-676731"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "hortonworks"
+cik = "0001610532"
+quarter_end = 2016-09-30
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001193125-16-762964"
+filing_date = 2016-11-08
+filing_form = "10-Q"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Balance sheet and revolving-credit-facility note report no outstanding borrowings."
+source_url = "https://www.sec.gov/Archives/edgar/data/1610532/000119312516762964/"
+immutable_evidence_id = "sec-accession:0001193125-16-762964"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "hortonworks"
+cik = "0001610532"
+quarter_end = 2016-12-31
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001193125-17-083587"
+filing_date = 2017-03-15
+filing_form = "10-K"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Balance sheet and revolving-credit-facility note report no outstanding borrowings."
+source_url = "https://www.sec.gov/Archives/edgar/data/1610532/000119312517083587/"
+immutable_evidence_id = "sec-accession:0001193125-17-083587"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "hortonworks"
+cik = "0001610532"
+quarter_end = 2017-03-31
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001193125-17-164152"
+filing_date = 2017-05-09
+filing_form = "10-Q"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Balance sheet and revolving-credit-facility note report no outstanding borrowings."
+source_url = "https://www.sec.gov/Archives/edgar/data/1610532/000119312517164152/"
+immutable_evidence_id = "sec-accession:0001193125-17-164152"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "hortonworks"
+cik = "0001610532"
+quarter_end = 2017-06-30
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001193125-17-251316"
+filing_date = 2017-08-08
+filing_form = "10-Q"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Balance sheet and revolving-credit-facility note report no outstanding borrowings."
+source_url = "https://www.sec.gov/Archives/edgar/data/1610532/000119312517251316/"
+immutable_evidence_id = "sec-accession:0001193125-17-251316"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "hortonworks"
+cik = "0001610532"
+quarter_end = 2017-09-30
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001193125-17-335709"
+filing_date = 2017-11-07
+filing_form = "10-Q"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Balance sheet and revolving-credit-facility note report no outstanding borrowings."
+source_url = "https://www.sec.gov/Archives/edgar/data/1610532/000119312517335709/"
+immutable_evidence_id = "sec-accession:0001193125-17-335709"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "hortonworks"
+cik = "0001610532"
+quarter_end = 2017-12-31
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001193125-18-084131"
+filing_date = 2018-03-15
+filing_form = "10-K"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Balance sheet and revolving-credit-facility note report no outstanding borrowings."
+source_url = "https://www.sec.gov/Archives/edgar/data/1610532/000119312518084131/"
+immutable_evidence_id = "sec-accession:0001193125-18-084131"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "hortonworks"
+cik = "0001610532"
+quarter_end = 2018-03-31
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001193125-18-157657"
+filing_date = 2018-05-09
+filing_form = "10-Q"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Balance sheet and revolving-credit-facility note report no outstanding borrowings."
+source_url = "https://www.sec.gov/Archives/edgar/data/1610532/000119312518157657/"
+immutable_evidence_id = "sec-accession:0001193125-18-157657"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "hortonworks"
+cik = "0001610532"
+quarter_end = 2018-06-30
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001193125-18-244303"
+filing_date = 2018-08-09
+filing_form = "10-Q"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Balance sheet and revolving-credit-facility note report no outstanding borrowings."
+source_url = "https://www.sec.gov/Archives/edgar/data/1610532/000119312518244303/"
+immutable_evidence_id = "sec-accession:0001193125-18-244303"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "hortonworks"
+cik = "0001610532"
+quarter_end = 2018-09-30
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001193125-18-322738"
+filing_date = 2018-11-08
+filing_form = "10-Q"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Balance sheet and revolving-credit-facility note report no outstanding borrowings."
+source_url = "https://www.sec.gov/Archives/edgar/data/1610532/000119312518322738/"
+immutable_evidence_id = "sec-accession:0001193125-18-322738"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "cloudera"
+cik = "0001535379"
+quarter_end = 2018-01-31
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001628280-19-003670"
+filing_date = 2019-03-29
+filing_form = "10-K"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Pre-term-loan balance sheet and financing disclosures show no outstanding borrowing."
+source_url = "https://www.sec.gov/Archives/edgar/data/1535379/000162828019003670/"
+immutable_evidence_id = "sec-accession:0001628280-19-003670"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "cloudera"
+cik = "0001535379"
+quarter_end = 2018-07-31
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001628280-18-011639"
+filing_date = 2018-09-06
+filing_form = "10-Q"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Pre-term-loan balance sheet and financing disclosures show no outstanding borrowing."
+source_url = "https://www.sec.gov/Archives/edgar/data/1535379/000162828018011639/"
+immutable_evidence_id = "sec-accession:0001628280-18-011639"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "cloudera"
+cik = "0001535379"
+quarter_end = 2018-10-31
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001628280-18-014845"
+filing_date = 2018-12-06
+filing_form = "10-Q"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Pre-term-loan balance sheet and financing disclosures show no outstanding borrowing."
+source_url = "https://www.sec.gov/Archives/edgar/data/1535379/000162828018014845/"
+immutable_evidence_id = "sec-accession:0001628280-18-014845"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "cloudera"
+cik = "0001535379"
+quarter_end = 2019-01-31
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001628280-19-003670"
+filing_date = 2019-03-29
+filing_form = "10-K"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Pre-term-loan balance sheet and financing disclosures show no outstanding borrowing."
+source_url = "https://www.sec.gov/Archives/edgar/data/1535379/000162828019003670/"
+immutable_evidence_id = "sec-accession:0001628280-19-003670"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "cloudera"
+cik = "0001535379"
+quarter_end = 2019-04-30
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001628280-19-007611"
+filing_date = 2019-06-05
+filing_form = "10-Q"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Pre-term-loan balance sheet and financing disclosures show no outstanding borrowing."
+source_url = "https://www.sec.gov/Archives/edgar/data/1535379/000162828019007611/"
+immutable_evidence_id = "sec-accession:0001628280-19-007611"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "cloudera"
+cik = "0001535379"
+quarter_end = 2019-07-31
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001628280-19-011400"
+filing_date = 2019-09-04
+filing_form = "10-Q"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Pre-term-loan balance sheet and financing disclosures show no outstanding borrowing."
+source_url = "https://www.sec.gov/Archives/edgar/data/1535379/000162828019011400/"
+immutable_evidence_id = "sec-accession:0001628280-19-011400"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "cloudera"
+cik = "0001535379"
+quarter_end = 2019-10-31
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001628280-19-014815"
+filing_date = 2019-12-06
+filing_form = "10-Q"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Pre-term-loan balance sheet and financing disclosures show no outstanding borrowing."
+source_url = "https://www.sec.gov/Archives/edgar/data/1535379/000162828019014815/"
+immutable_evidence_id = "sec-accession:0001628280-19-014815"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "cloudera"
+cik = "0001535379"
+quarter_end = 2020-04-30
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001628280-20-009075"
+filing_date = 2020-06-05
+filing_form = "10-Q"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Pre-term-loan balance sheet and financing disclosures show no outstanding borrowing."
+source_url = "https://www.sec.gov/Archives/edgar/data/1535379/000162828020009075/"
+immutable_evidence_id = "sec-accession:0001628280-20-009075"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "cloudera"
+cik = "0001535379"
+quarter_end = 2020-07-31
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001628280-20-013328"
+filing_date = 2020-09-04
+filing_form = "10-Q"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Pre-term-loan balance sheet and financing disclosures show no outstanding borrowing."
+source_url = "https://www.sec.gov/Archives/edgar/data/1535379/000162828020013328/"
+immutable_evidence_id = "sec-accession:0001628280-20-013328"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "cloudera"
+cik = "0001535379"
+quarter_end = 2020-10-31
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001628280-20-017108"
+filing_date = 2020-12-04
+filing_form = "10-Q"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Pre-term-loan balance sheet and financing disclosures show no outstanding borrowing."
+source_url = "https://www.sec.gov/Archives/edgar/data/1535379/000162828020017108/"
+immutable_evidence_id = "sec-accession:0001628280-20-017108"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+
+[[records]]
+firm = "mongodb"
+cik = "0001441816"
+quarter_end = 2017-10-31
+classification = "ZERO_SUPPORTED_BY_FILINGS"
+accession = "0001441816-17-000010"
+filing_date = 2017-12-15
+filing_form = "10-Q"
+evidence_location = "Consolidated balance sheets and borrowing or credit-facility disclosures"
+evidence_note = "Pre-convertible-notes balance sheet and borrowing disclosures show no outstanding borrowing."
+source_url = "https://www.sec.gov/Archives/edgar/data/1441816/000144181617000010/"
+immutable_evidence_id = "sec-accession:0001441816-17-000010"
+reviewer = "TechDD Part A debt-semantics audit"
+reviewed_at = 2026-09-03T00:00:00Z
+

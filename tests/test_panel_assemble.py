@@ -159,3 +159,21 @@ def test_empty_inputs_yield_empty_frame():
     firm, *_ = _inputs()
     panel = build_panel([firm], {}, {}, {})
     assert panel.empty
+
+
+def test_exact_filing_backed_zero_retains_only_eligible_endpoint():
+    firm, metrics, fundamentals, prices = _inputs()
+    fundamentals[4].debt = 0.0
+    for index, row in enumerate(fundamentals):
+        if index != 4:
+            row.debt = None
+    panel = build_panel([firm], {"acme": metrics}, {"acme": fundamentals}, {"acme": prices})
+    assert list(panel["quarter_end"]) == [QUARTERS[4].isoformat()]
+
+
+def test_debt_zero_does_not_weaken_cash_requirement():
+    firm, metrics, fundamentals, prices = _inputs()
+    fundamentals[4].debt = 0.0
+    fundamentals[4].cash = None
+    panel = build_panel([firm], {"acme": metrics}, {"acme": fundamentals}, {"acme": prices})
+    assert QUARTERS[4].isoformat() not in set(panel["quarter_end"])

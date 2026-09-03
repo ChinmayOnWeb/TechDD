@@ -55,6 +55,9 @@ class DataManifest:
     provenance_schema_version: int
     metric_schema_version: str
     firms: tuple[ManifestFirm, ...]
+    debt_evidence_schema_version: int | None = None
+    debt_evidence_artifact: Path | None = None
+    debt_evidence_sha256: str | None = None
 
 
 @dataclass(frozen=True)
@@ -105,6 +108,10 @@ def load_manifest(path: Path) -> DataManifest:
         provenance_schema_version=raw.get("provenance_schema_version", 0),
         metric_schema_version=raw.get("metric_schema_version", ""),
         firms=tuple(firms),
+        debt_evidence_schema_version=raw.get("debt_evidence_schema_version"),
+        debt_evidence_artifact=(Path(raw["debt_evidence_artifact"])
+                                if raw.get("debt_evidence_artifact") else None),
+        debt_evidence_sha256=raw.get("debt_evidence_sha256"),
     )
 
 
@@ -269,6 +276,39 @@ def _validate_artifact(root: Path, firm: ManifestFirm, kind: str,
 
 def validate_runtime_artifacts(manifest: DataManifest, root: Path) -> list[ValidationFinding]:
     findings: list[ValidationFinding] = []
+    if manifest.debt_evidence_artifact is not None:
+        ledger_path = root / manifest.debt_evidence_artifact
+        label = manifest.debt_evidence_artifact.as_posix()
+        if not ledger_path.is_file():
+            findings.append(ValidationFinding("MISSING", label, "required debt evidence ledger"))
+        else:
+            actual_hash = sha256_file(ledger_path)
+            if actual_hash != manifest.debt_evidence_sha256:
+                findings.append(ValidationFinding(
+                    "HASH MISMATCH", label,
+                    f"recorded={manifest.debt_evidence_sha256!r} actual={actual_hash}"))
+            else:
+                findings.append(ValidationFinding("AVAILABLE", label, actual_hash))
+            identities = {firm.slug: firm.cik for firm in manifest.firms}
+            candidate_path = root / "panel/candidate_universe.csv"
+            try:
+                from git_due_diligence.panel.debt_evidence import (
+                    DEBT_EVIDENCE_SCHEMA_VERSION,
+                    load_debt_evidence,
+                    load_firm_identities,
+                    merge_firm_identities,
+                )
+                if manifest.debt_evidence_schema_version != DEBT_EVIDENCE_SCHEMA_VERSION:
+                    raise ValueError(
+                        "manifest debt evidence schema version does not match runtime schema")
+                if candidate_path.is_file():
+                    identities = merge_firm_identities(
+                        {firm.slug: firm.cik for firm in manifest.firms},
+                        load_firm_identities(candidate_path),
+                    )
+                load_debt_evidence(ledger_path, identities)
+            except (OSError, ValueError) as exc:
+                findings.append(ValidationFinding("IDENTITY WARNING", label, str(exc)))
     for firm in manifest.firms:
         findings.extend(_validate_artifact(
             root, firm, "fundamentals", firm.fundamentals_artifact))
