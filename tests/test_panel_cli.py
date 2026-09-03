@@ -137,6 +137,8 @@ def test_panel_regress_writes_result_tables(tmp_path):
 
 def _write_explain_fixture(
     tmp_path, *, debt=100.0, ledger_record=False, include_audit_csv=True,
+    fundamentals_name="edgar_CIK0000000001.json", write_fundamentals=True,
+    conventional_debt=None,
 ):
     root = tmp_path / "root"
     (root / "panel_cache").mkdir(parents=True)
@@ -148,8 +150,16 @@ def _write_explain_fixture(
     facts["facts"]["us-gaap"]["LongTermDebt"]["units"]["USD"] = (
         [] if debt is None else [{"end": "2024-03-31", "val": debt,
                                   "accn": "0000000001-24-000002"}])
-    (root / "panel_cache/edgar_CIK0000000001.json").write_text(
-        json.dumps(facts), encoding="utf-8")
+    if write_fundamentals:
+        (root / "panel_cache" / fundamentals_name).write_text(
+            json.dumps(facts), encoding="utf-8")
+    if conventional_debt is not None:
+        conventional = _canned_edgar()
+        conventional["facts"]["us-gaap"]["LongTermDebt"]["units"]["USD"] = [
+            {"end": "2024-03-31", "val": conventional_debt,
+             "accn": "0000000001-24-000099"}]
+        (root / "panel_cache/edgar_CIK0000000001.json").write_text(
+            json.dumps(conventional), encoding="utf-8")
     manifest = tmp_path / "manifest.toml"
     manifest.write_text('''schema_version = 1
 +provenance_schema_version = 1
@@ -170,14 +180,14 @@ def _write_explain_fixture(
 +sample_end=2024-12-31
 +permanent_security_id="unavailable"
 +financial_source="SEC"
-+fundamentals_artifact="panel_cache/edgar_CIK0000000001.json"
++fundamentals_artifact="panel_cache/FUNDAMENTALS_NAME"
 +price_source="CRSP"
 +price_artifact="prices.csv"
 +price_coverage_start=2023-01-01
 +price_coverage_end=2024-12-31
 +metrics_artifact="metrics.json"
 +coverage_caveat="none"
-+'''.replace("+", ""), encoding="utf-8")
++'''.replace("+", "").replace("FUNDAMENTALS_NAME", fundamentals_name), encoding="utf-8")
     ledger = tmp_path / "debt.toml"
     record = '''
 +[[records]]
@@ -237,3 +247,66 @@ def test_explain_debt_works_without_candidate_audit_csv(tmp_path, monkeypatch):
         "--ledger", str(ledger), "--root", str(root)])
     assert result.exit_code == 0, result.output
     assert "ZERO_SUPPORTED_BY_FILINGS" in result.output
+
+
+def test_explain_debt_uses_multifirm_ledger_with_artifact_only_root(tmp_path):
+    root, manifest, ledger = _write_explain_fixture(
+        tmp_path, debt=None, ledger_record=True, include_audit_csv=False)
+    with ledger.open("a", encoding="utf-8") as handle:
+        handle.write('''
+[[records]]
+firm="other"
+cik="0000000002"
+quarter_end=2024-03-31
+classification="ZERO_SUPPORTED_BY_FILINGS"
+accession="0000000002-24-000001"
+filing_date=2024-05-01
+filing_form="10-Q"
+evidence_location="balance sheet"
+evidence_note="facility had no balance"
+source_url="https://www.sec.gov/Archives/edgar/data/2/000000000224000001/"
+immutable_evidence_id="sec-accession:0000000002-24-000001"
+reviewer="reviewer"
+reviewed_at=2024-05-02T00:00:00Z
+''')
+    (ledger.parent / "candidate_universe.csv").write_text(
+        "slug,cik\nacme,0000000001\nother,0000000002\n", encoding="utf-8")
+    result = runner.invoke(app, ["panel", "explain-debt", "--firm", "acme",
+        "--quarter", "2024-03-31", "--manifest", str(manifest),
+        "--ledger", str(ledger), "--root", str(root)])
+    assert result.exit_code == 0, result.output
+    assert "ZERO_SUPPORTED_BY_FILINGS" in result.output
+
+
+def test_explain_debt_reads_exact_nonstandard_manifest_artifact(tmp_path):
+    root, manifest, ledger = _write_explain_fixture(
+        tmp_path, debt=321.0, fundamentals_name="frozen-companyfacts.json",
+        conventional_debt=999.0)
+    result = runner.invoke(app, ["panel", "explain-debt", "--firm", "acme",
+        "--quarter", "2024-03-31", "--manifest", str(manifest),
+        "--ledger", str(ledger), "--root", str(root)])
+    assert result.exit_code == 0, result.output
+    assert "debt=321.0" in result.output
+    assert "debt=999.0" not in result.output
+
+
+def test_explain_debt_missing_declared_artifact_fails_without_fetch(tmp_path):
+    root, manifest, ledger = _write_explain_fixture(
+        tmp_path, fundamentals_name="missing.json", write_fundamentals=False,
+        conventional_debt=999.0)
+    result = runner.invoke(app, ["panel", "explain-debt", "--firm", "acme",
+        "--quarter", "2024-03-31", "--manifest", str(manifest),
+        "--ledger", str(ledger), "--root", str(root)])
+    assert result.exit_code == 1
+    assert "declared CompanyFacts artifact is missing" in result.output
+
+
+def test_explain_debt_malformed_declared_artifact_fails(tmp_path):
+    root, manifest, ledger = _write_explain_fixture(
+        tmp_path, fundamentals_name="malformed.json")
+    (root / "panel_cache/malformed.json").write_text("not json", encoding="utf-8")
+    result = runner.invoke(app, ["panel", "explain-debt", "--firm", "acme",
+        "--quarter", "2024-03-31", "--manifest", str(manifest),
+        "--ledger", str(ledger), "--root", str(root)])
+    assert result.exit_code == 1
+    assert "declared CompanyFacts artifact is invalid" in result.output

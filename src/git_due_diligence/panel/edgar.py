@@ -63,6 +63,19 @@ def fetch_companyfacts(cik: str, cache_dir: Path,
     return json.loads(cache_file.read_text(encoding="utf-8"))
 
 
+def load_companyfacts(path: Path) -> dict:
+    """Read an exact, caller-selected CompanyFacts artifact without fetching."""
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError as exc:
+        raise ValueError(f"declared CompanyFacts artifact is missing: {path}") from exc
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ValueError(f"declared CompanyFacts artifact is invalid: {path}: {exc}") from exc
+    if not isinstance(payload, dict):
+        raise ValueError(f"declared CompanyFacts artifact is invalid: {path}: expected object")
+    return payload
+
+
 def _duration_series(section: dict, tags: list[str],
                      day_range: tuple[int, int]) -> dict[date, float]:
     """Union of several tags' duration facts, filled in priority order: an
@@ -190,6 +203,17 @@ def fetch_fundamentals(
     debt_evidence: dict[tuple[str, date], DebtEvidence] | None = None,
 ) -> list[QuarterFundamentals]:
     facts = fetch_companyfacts(cik, cache_dir, fetch)
+    return fundamentals_from_companyfacts(
+        facts, firm_slug=firm_slug, debt_evidence=debt_evidence)
+
+
+def fundamentals_from_companyfacts(
+    facts: dict,
+    *,
+    firm_slug: str | None = None,
+    debt_evidence: dict[tuple[str, date], DebtEvidence] | None = None,
+) -> list[QuarterFundamentals]:
+    """Extract fundamentals from an already selected CompanyFacts payload."""
     gaap = facts.get("facts", {}).get("us-gaap", {})
     dei = facts.get("facts", {}).get("dei", {})
 

@@ -197,20 +197,23 @@ def explain_debt(
         load_firm_identities,
         merge_firm_identities,
     )
-    from git_due_diligence.panel.edgar import fetch_fundamentals
+    from git_due_diligence.panel.edgar import (
+        fundamentals_from_companyfacts,
+        load_companyfacts,
+    )
     from git_due_diligence.panel.recovery import load_manifest, select_manifest_firms
 
     try:
         selected = select_manifest_firms(load_manifest(manifest), firm)[0]
         identities = {selected.slug: selected.cik}
-        identity_path = root / "panel/candidate_universe.csv"
+        identity_path = ledger.with_name("candidate_universe.csv")
         if identity_path.is_file():
             identities = merge_firm_identities(
                 identities, load_firm_identities(identity_path))
         evidence = load_debt_evidence(ledger, identities)
-        rows = fetch_fundamentals(
-            selected.cik,
-            (root / selected.fundamentals_artifact).parent,
+        artifact = root / selected.fundamentals_artifact
+        rows = fundamentals_from_companyfacts(
+            load_companyfacts(artifact),
             firm_slug=selected.slug,
             debt_evidence=evidence,
         )
