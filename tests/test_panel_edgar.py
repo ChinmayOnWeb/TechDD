@@ -33,7 +33,7 @@ def _canned_facts() -> dict:
                 ]}},
                 "CashAndCashEquivalentsAtCarryingValue": {"units": {"USD": [
                     _entry(None, "2024-04-30", 50.0),
-                    _entry(None, "2024-07-31", 55.0),
+                    _entry(None, "2024-07-31", 0.0),
                 ]}},
             },
         },
@@ -62,6 +62,7 @@ def test_instants_matched_within_tolerance(tmp_path):
     assert q1.shares_outstanding == 100_000_000.0
     assert q1.operating_income == 10.0
     assert q1.debt is None
+    assert rows[1].cash == 0.0
     q4 = rows[3]
     assert q4.shares_outstanding == 103_000_000.0
     assert q4.cash is None
