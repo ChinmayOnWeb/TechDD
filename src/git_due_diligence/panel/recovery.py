@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import hashlib
-import csv
 import json
 import re
 import shutil
@@ -292,17 +291,21 @@ def validate_runtime_artifacts(manifest: DataManifest, root: Path) -> list[Valid
                 findings.append(ValidationFinding("AVAILABLE", label, actual_hash))
             identities = {firm.slug: firm.cik for firm in manifest.firms}
             candidate_path = root / "panel/candidate_universe.csv"
-            if candidate_path.is_file():
-                with candidate_path.open(encoding="utf-8", newline="") as handle:
-                    identities.update({row["slug"]: row["cik"] for row in csv.DictReader(handle)})
             try:
                 from git_due_diligence.panel.debt_evidence import (
                     DEBT_EVIDENCE_SCHEMA_VERSION,
                     load_debt_evidence,
+                    load_firm_identities,
+                    merge_firm_identities,
                 )
                 if manifest.debt_evidence_schema_version != DEBT_EVIDENCE_SCHEMA_VERSION:
                     raise ValueError(
                         "manifest debt evidence schema version does not match runtime schema")
+                if candidate_path.is_file():
+                    identities = merge_firm_identities(
+                        {firm.slug: firm.cik for firm in manifest.firms},
+                        load_firm_identities(candidate_path),
+                    )
                 load_debt_evidence(ledger_path, identities)
             except (OSError, ValueError) as exc:
                 findings.append(ValidationFinding("IDENTITY WARNING", label, str(exc)))

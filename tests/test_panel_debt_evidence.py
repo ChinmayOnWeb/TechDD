@@ -7,12 +7,29 @@ import pytest
 
 from git_due_diligence.panel.debt_evidence import (
     load_debt_evidence,
+    merge_firm_identities,
     resolve_debt,
 )
 from git_due_diligence.panel.recovery import sha256_file
 
 
 IDENTITIES = {"acme": "0000000001"}
+
+
+def test_matching_supplemental_identity_is_accepted():
+    assert merge_firm_identities(
+        {"acme": "0000000001"}, {"acme": "1", "other": "2"},
+    ) == {"acme": "0000000001", "other": "0000000002"}
+
+
+def test_conflicting_supplemental_identity_is_rejected():
+    with pytest.raises(ValueError, match="conflicting CIK identity for acme"):
+        merge_firm_identities({"acme": "0000000001"}, {"acme": "0000000002"})
+
+
+def test_evidence_cannot_cross_issuers_sharing_a_slug():
+    with pytest.raises(ValueError, match="conflicting CIK identity for acme"):
+        merge_firm_identities({"acme": "0000000002"}, {"acme": "0000000001"})
 
 
 def _ledger(**changes) -> str:

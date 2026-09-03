@@ -135,12 +135,15 @@ def test_panel_regress_writes_result_tables(tmp_path):
     assert "h1" in result.output
 
 
-def _write_explain_fixture(tmp_path, *, debt=100.0, ledger_record=False):
+def _write_explain_fixture(
+    tmp_path, *, debt=100.0, ledger_record=False, include_audit_csv=True,
+):
     root = tmp_path / "root"
     (root / "panel_cache").mkdir(parents=True)
     (root / "panel").mkdir()
-    (root / "panel/candidate_universe.csv").write_text(
-        "slug,cik\nacme,0000000001\n", encoding="utf-8")
+    if include_audit_csv:
+        (root / "panel/candidate_universe.csv").write_text(
+            "slug,cik\nacme,0000000001\n", encoding="utf-8")
     facts = _canned_edgar()
     facts["facts"]["us-gaap"]["LongTermDebt"]["units"]["USD"] = (
         [] if debt is None else [{"end": "2024-03-31", "val": debt,
@@ -223,3 +226,14 @@ def test_explain_debt_identifies_unresolved(tmp_path):
         "--ledger", str(ledger), "--root", str(root)])
     assert result.exit_code == 0, result.output
     assert "UNRESOLVED" in result.output
+
+
+def test_explain_debt_works_without_candidate_audit_csv(tmp_path, monkeypatch):
+    root, manifest, ledger = _write_explain_fixture(
+        tmp_path, debt=None, ledger_record=True, include_audit_csv=False)
+    monkeypatch.chdir(tmp_path)
+    result = runner.invoke(app, ["panel", "explain-debt", "--firm", "acme",
+        "--quarter", "2024-03-31", "--manifest", str(manifest),
+        "--ledger", str(ledger), "--root", str(root)])
+    assert result.exit_code == 0, result.output
+    assert "ZERO_SUPPORTED_BY_FILINGS" in result.output

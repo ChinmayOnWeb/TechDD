@@ -65,6 +65,22 @@ def load_firm_identities(path: Path) -> dict[str, str]:
     return identities
 
 
+def merge_firm_identities(
+    authoritative: Mapping[str, str], supplemental: Mapping[str, str],
+) -> dict[str, str]:
+    """Merge identities without allowing supplemental data to replace authority."""
+    merged = {slug: str(cik).zfill(10) for slug, cik in authoritative.items()}
+    for slug, cik in supplemental.items():
+        normalized = str(cik).zfill(10)
+        existing = merged.get(slug)
+        if existing is not None and existing != normalized:
+            raise ValueError(
+                f"conflicting CIK identity for {slug}: authoritative "
+                f"{existing}, supplemental {normalized}")
+        merged[slug] = normalized
+    return merged
+
+
 def load_debt_evidence(
     path: Path, identities: Mapping[str, str],
 ) -> dict[tuple[str, date], DebtEvidence]:

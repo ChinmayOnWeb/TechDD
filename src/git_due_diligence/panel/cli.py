@@ -133,7 +133,11 @@ def build(
     from git_due_diligence.panel.assemble import build_panel
     from git_due_diligence.panel.crsp import load_crsp_prices
     from git_due_diligence.panel.edgar import fetch_fundamentals
-    from git_due_diligence.panel.debt_evidence import load_debt_evidence, load_firm_identities
+    from git_due_diligence.panel.debt_evidence import (
+        load_debt_evidence,
+        load_firm_identities,
+        merge_firm_identities,
+    )
     from git_due_diligence.panel.metrics_cache import load_or_compute_metrics
     from git_due_diligence.panel.prices import quarter_end_prices, quarter_end_prices_from_series
     from git_due_diligence.panel.universe import fiscal_quarter_ends, load_universe
@@ -146,7 +150,8 @@ def build(
     identities = {firm.slug: firm.cik for firm in firms}
     identity_path = debt_evidence_path.with_name("candidate_universe.csv")
     if identity_path.is_file():
-        identities.update(load_firm_identities(identity_path))
+        identities = merge_firm_identities(
+            identities, load_firm_identities(identity_path))
     debt_evidence = load_debt_evidence(debt_evidence_path, identities)
     metrics_by_slug: dict = {}
     fundamentals_by_slug: dict = {}
@@ -187,14 +192,21 @@ def explain_debt(
     root: Path = typer.Option(Path("."), exists=True, file_okay=False),
 ) -> None:
     """Explain the reported, filing-backed-zero, or unresolved debt source."""
-    from git_due_diligence.panel.debt_evidence import load_debt_evidence, load_firm_identities
+    from git_due_diligence.panel.debt_evidence import (
+        load_debt_evidence,
+        load_firm_identities,
+        merge_firm_identities,
+    )
     from git_due_diligence.panel.edgar import fetch_fundamentals
     from git_due_diligence.panel.recovery import load_manifest, select_manifest_firms
 
     try:
         selected = select_manifest_firms(load_manifest(manifest), firm)[0]
-        identities = load_firm_identities(root / "panel/candidate_universe.csv")
-        identities[selected.slug] = selected.cik
+        identities = {selected.slug: selected.cik}
+        identity_path = root / "panel/candidate_universe.csv"
+        if identity_path.is_file():
+            identities = merge_firm_identities(
+                identities, load_firm_identities(identity_path))
         evidence = load_debt_evidence(ledger, identities)
         rows = fetch_fundamentals(
             selected.cik,
